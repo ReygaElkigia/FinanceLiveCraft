@@ -119,6 +119,7 @@ body {
   gap: 1rem;
   margin-bottom: 1.5rem;
 }
+.summary.summary-3 { grid-template-columns: repeat(3, 1fr); }
 .card {
   background: var(--card-bg);
   border-radius: var(--radius);
@@ -190,6 +191,14 @@ body {
   gap: 0.85rem;
   align-items: end;
 }
+/* Asset entry form */
+.asset-form {
+  display: grid;
+  grid-template-columns: 2fr 1fr 0.7fr 1fr 1fr 1fr auto;
+  gap: 0.85rem;
+  align-items: end;
+}
+
 .field { display: flex; flex-direction: column; gap: 0.3rem; }
 .field-wide { min-width: 0; }
 .field label {
@@ -318,6 +327,28 @@ tbody tr:hover { background: var(--green-50); }
 }
 .pos { color: var(--in); font-weight: 600; }
 .neg { color: var(--out); font-weight: 600; }
+.col-qty { width: 60px; }
+
+/* Payment method badge */
+.pay-badge {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+.pay-hutang { background: rgba(245, 166, 35, 0.18); color: #b5760a; border-color: rgba(245, 166, 35, 0.4); }
+.pay-cash { background: rgba(22, 147, 90, 0.14); color: var(--in); border-color: rgba(22, 147, 90, 0.35); }
+.pay-transfer { background: rgba(33, 120, 190, 0.14); color: #2178be; border-color: rgba(33, 120, 190, 0.35); }
+.pay-debit { background: rgba(120, 90, 190, 0.14); color: #7a5abe; border-color: rgba(120, 90, 190, 0.35); }
+.pay-kartukredit { background: rgba(214, 69, 69, 0.14); color: var(--out); border-color: rgba(214, 69, 69, 0.35); }
+@media (prefers-color-scheme: dark) {
+  .pay-hutang { color: #f0b552; }
+  .pay-transfer { color: #6bb2ec; }
+  .pay-debit { color: #b39ae8; }
+}
 
 .icon-btn {
   border: 1px solid var(--line);
@@ -462,7 +493,9 @@ tfoot td {
 /* ---------- Responsive ---------- */
 @media (max-width: 900px) {
   .summary { grid-template-columns: repeat(2, 1fr); }
+  .summary.summary-3 { grid-template-columns: repeat(3, 1fr); }
   .entry-form { grid-template-columns: 1fr 1fr; }
+  .asset-form { grid-template-columns: repeat(3, 1fr); }
   .field-wide { grid-column: 1 / -1; }
   .field-actions { grid-column: 1 / -1; }
   .col-desc { max-width: none; }
@@ -470,22 +503,26 @@ tfoot td {
 
 /* Card-style table on phones so nothing is cut off */
 @media (max-width: 640px) {
-  .summary { grid-template-columns: 1fr; }
+  .summary, .summary.summary-3 { grid-template-columns: 1fr; }
   .entry-form { grid-template-columns: 1fr; }
   .container { padding: 1rem; }
 
-  /* Card-style transform applies to the Cash Flow table only */
-  #view-cashflow .table-panel { background: transparent; box-shadow: none; overflow: visible; }
-  #view-cashflow .table-wrap { overflow: visible; }
-  #txTable, #txTable tbody, #txTable tr, #txTable td { display: block; width: 100%; }
-  #txTable thead, #txTable tfoot { display: none; }
+  /* Card-style transform applies to data tables (Cash Flow & Aset) */
+  #view-cashflow .table-panel,
+  #view-asset .table-panel { background: transparent; box-shadow: none; overflow: visible; }
+  #view-cashflow .table-wrap,
+  #view-asset .table-wrap { overflow: visible; }
+  .asset-form { grid-template-columns: 1fr 1fr; }
+
+  .data-table, .data-table tbody, .data-table tr, .data-table td { display: block; width: 100%; }
+  .data-table thead, .data-table tfoot { display: none; }
 
   /* Expense Log stays a scrollable matrix on mobile */
   .expense-summary { grid-template-columns: 1fr; }
   .expense-head { flex-direction: column; align-items: stretch; }
   .expense-controls { justify-content: flex-start; }
 
-  #txBody tr {
+  .data-table tbody tr {
     background: var(--card-bg);
     border-radius: var(--radius);
     box-shadow: var(--shadow);
@@ -493,10 +530,10 @@ tfoot td {
     margin-bottom: 0.85rem;
     position: relative;
   }
-  #txBody tr:hover { background: var(--card-bg); }
-  #txBody tr:nth-child(even) { background: var(--card-bg); }
+  .data-table tbody tr:hover { background: var(--card-bg); }
+  .data-table tbody tr:nth-child(even) { background: var(--card-bg); }
 
-  #txBody td {
+  .data-table tbody td {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -505,8 +542,8 @@ tfoot td {
     border-bottom: 1px dashed var(--line);
     text-align: right;
   }
-  #txBody td:last-child { border-bottom: none; }
-  #txBody td::before {
+  .data-table tbody td:last-child { border-bottom: none; }
+  .data-table tbody td::before {
     content: attr(data-label);
     font-size: 0.72rem;
     font-weight: 700;
@@ -516,11 +553,11 @@ tfoot td {
     text-align: left;
   }
   /* Hide empty money cells on mobile to reduce noise */
-  #txBody td.col-num:empty { display: none; }
-  #txBody td.col-desc { text-align: right; }
+  .data-table tbody td.col-num:empty { display: none; }
+  .data-table tbody td.col-desc { text-align: right; }
 
   .col-actions { width: auto; }
-  #txBody td.col-actions { justify-content: flex-end; }
-  #txBody td.col-actions::before { content: ""; }
+  .data-table tbody td.col-actions { justify-content: flex-end; }
+  .data-table tbody td.col-actions::before { content: ""; }
   .icon-btn { width: 40px; height: 40px; font-size: 1.05rem; }
 }

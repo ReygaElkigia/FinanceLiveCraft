@@ -5,6 +5,10 @@
   "use strict";
 
   var STORAGE_KEY = "financelivecraft.transactions.v1";
+  var ASSET_KEY = "financelivecraft.assets.v1";
+
+  var MONTHS_FULL = ["Januari","Februari","Maret","April","Mei","Juni","Juli",
+    "Agustus","September","Oktober","November","Desember"];
 
   // Kode keterangan yang tersedia (dengan label untuk membantu pengguna).
   var CODES = [
@@ -68,6 +72,7 @@
 
   // ---- State ----
   var transactions = load();
+  var assets = loadAssets();
 
   // ---- Elements ----
   var el = {
@@ -101,7 +106,30 @@
     expenseWrap: document.getElementById("expenseWrap"),
     expenseEmpty: document.getElementById("expenseEmpty"),
     expenseSummary: document.getElementById("expenseSummary"),
-    exportExpenseBtn: document.getElementById("exportExpenseBtn")
+    exportExpenseBtn: document.getElementById("exportExpenseBtn"),
+    // Asset
+    viewAsset: document.getElementById("view-asset"),
+    assetForm: document.getElementById("assetForm"),
+    assetEditId: document.getElementById("assetEditId"),
+    assetNama: document.getElementById("assetNama"),
+    assetHarga: document.getElementById("assetHarga"),
+    assetQty: document.getElementById("assetQty"),
+    assetTotalInput: document.getElementById("assetTotalInput"),
+    assetPembayaran: document.getElementById("assetPembayaran"),
+    assetBulan: document.getElementById("assetBulan"),
+    assetSubmitBtn: document.getElementById("assetSubmitBtn"),
+    assetCancelEdit: document.getElementById("assetCancelEdit"),
+    assetFormTitle: document.getElementById("assetFormTitle"),
+    assetBody: document.getElementById("assetBody"),
+    assetEmpty: document.getElementById("assetEmpty"),
+    assetSearch: document.getElementById("assetSearch"),
+    assetFilterBulan: document.getElementById("assetFilterBulan"),
+    assetFilterPembayaran: document.getElementById("assetFilterPembayaran"),
+    exportAssetBtn: document.getElementById("exportAssetBtn"),
+    assetTotal: document.getElementById("assetTotal"),
+    assetCount: document.getElementById("assetCount"),
+    assetDebt: document.getElementById("assetDebt"),
+    assetFootTotal: document.getElementById("assetFootTotal")
   };
 
   // ---- Formatting helpers ----
@@ -155,6 +183,23 @@
 
   function uid() {
     return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  }
+
+  function loadAssets() {
+    try {
+      var raw = localStorage.getItem(ASSET_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function saveAssets() {
+    try {
+      localStorage.setItem(ASSET_KEY, JSON.stringify(assets));
+    } catch (e) {
+      alert("Gagal menyimpan data aset ke browser.");
+    }
   }
 
   // ---- Populate dropdowns ----
@@ -551,15 +596,236 @@
     URL.revokeObjectURL(url);
   }
 
+  // ================= ASSET (Aset Masuk) =================
+
+  function populateAssetSelectors() {
+    // Bulan dropdown pada form
+    MONTHS_FULL.forEach(function (m) {
+      var o = document.createElement("option");
+      o.value = m;
+      o.textContent = m;
+      el.assetBulan.appendChild(o);
+    });
+    // Default bulan = bulan sekarang
+    el.assetBulan.value = MONTHS_FULL[new Date().getMonth()];
+  }
+
+  function refreshAssetFilters() {
+    // Filter bulan berdasarkan data yang ada, urut sesuai kalender.
+    var used = {};
+    assets.forEach(function (a) { used[a.bulan] = true; });
+    var months = MONTHS_FULL.filter(function (m) { return used[m]; });
+
+    var curBulan = el.assetFilterBulan.value;
+    el.assetFilterBulan.innerHTML = '<option value="">Semua Bulan</option>';
+    months.forEach(function (m) {
+      var o = document.createElement("option");
+      o.value = m; o.textContent = m;
+      el.assetFilterBulan.appendChild(o);
+    });
+    if (curBulan && months.indexOf(curBulan) !== -1) el.assetFilterBulan.value = curBulan;
+  }
+
+  function assetTotalOf(a) {
+    // Total tersimpan; jika kosong, hitung dari harga x qty.
+    if (a.total) return a.total;
+    return (a.harga || 0) * (a.qty || 0);
+  }
+
+  function getFilteredAssets() {
+    var q = el.assetSearch.value.trim().toLowerCase();
+    var bulan = el.assetFilterBulan.value;
+    var bayar = el.assetFilterPembayaran.value;
+    return assets.filter(function (a) {
+      if (bulan && a.bulan !== bulan) return false;
+      if (bayar && a.pembayaran !== bayar) return false;
+      if (q && a.nama.toLowerCase().indexOf(q) === -1) return false;
+      return true;
+    }).sort(function (x, y) {
+      var mx = MONTHS_FULL.indexOf(x.bulan), my = MONTHS_FULL.indexOf(y.bulan);
+      if (mx !== my) return mx - my;
+      return x.id < y.id ? -1 : 1;
+    });
+  }
+
+  function paymentClass(p) {
+    return "pay-" + String(p).toLowerCase().replace(/[^a-z]/g, "");
+  }
+
+  function renderAssets() {
+    refreshAssetFilters();
+    var rows = getFilteredAssets();
+
+    el.assetBody.innerHTML = "";
+    var total = 0, debt = 0;
+
+    rows.forEach(function (a) {
+      var rowTotal = assetTotalOf(a);
+      total += rowTotal;
+      if (a.pembayaran === "Hutang") debt += rowTotal;
+
+      var tr = document.createElement("tr");
+
+      var tdNama = document.createElement("td");
+      tdNama.className = "col-desc";
+      tdNama.setAttribute("data-label", "Nama Barang");
+      tdNama.textContent = a.nama;
+
+      var tdHarga = document.createElement("td");
+      tdHarga.className = "col-num";
+      tdHarga.setAttribute("data-label", "Harga Satuan");
+      tdHarga.textContent = a.harga ? formatRupiah(a.harga) : "";
+
+      var tdQty = document.createElement("td");
+      tdQty.className = "col-num col-qty";
+      tdQty.setAttribute("data-label", "Qty");
+      tdQty.textContent = a.qty;
+
+      var tdTotal = document.createElement("td");
+      tdTotal.className = "col-num";
+      tdTotal.setAttribute("data-label", "Total");
+      tdTotal.textContent = formatRupiah(rowTotal);
+
+      var tdBayar = document.createElement("td");
+      tdBayar.setAttribute("data-label", "Pembayaran");
+      var payBadge = document.createElement("span");
+      payBadge.className = "pay-badge " + paymentClass(a.pembayaran);
+      payBadge.textContent = a.pembayaran;
+      tdBayar.appendChild(payBadge);
+
+      var tdBulan = document.createElement("td");
+      tdBulan.setAttribute("data-label", "Bulan");
+      tdBulan.textContent = a.bulan;
+
+      var tdAct = document.createElement("td");
+      tdAct.className = "col-actions";
+      var editBtn = document.createElement("button");
+      editBtn.className = "icon-btn";
+      editBtn.type = "button";
+      editBtn.title = "Edit";
+      editBtn.setAttribute("aria-label", "Edit aset");
+      editBtn.innerHTML = '<span aria-hidden="true">✎</span>';
+      editBtn.addEventListener("click", function () { startEditAsset(a.id); });
+      var delBtn = document.createElement("button");
+      delBtn.className = "icon-btn del";
+      delBtn.type = "button";
+      delBtn.title = "Hapus";
+      delBtn.setAttribute("aria-label", "Hapus aset");
+      delBtn.innerHTML = '<span aria-hidden="true">🗑</span>';
+      delBtn.addEventListener("click", function () { removeAsset(a.id); });
+      tdAct.appendChild(editBtn);
+      tdAct.appendChild(delBtn);
+
+      tr.appendChild(tdNama);
+      tr.appendChild(tdHarga);
+      tr.appendChild(tdQty);
+      tr.appendChild(tdTotal);
+      tr.appendChild(tdBayar);
+      tr.appendChild(tdBulan);
+      tr.appendChild(tdAct);
+      el.assetBody.appendChild(tr);
+    });
+
+    el.assetEmpty.hidden = rows.length !== 0;
+    el.assetFootTotal.textContent = formatRupiah(total);
+    el.assetTotal.textContent = formatRupiah(total);
+    el.assetCount.textContent = String(rows.length);
+    el.assetDebt.textContent = formatRupiah(debt);
+  }
+
+  function computeFormTotal() {
+    var harga = parseMoney(el.assetHarga.value);
+    var qty = parseInt(el.assetQty.value, 10) || 0;
+    if (harga) {
+      el.assetTotalInput.value = formatRupiah(harga * qty);
+    }
+  }
+
+  function addOrUpdateAsset(data) {
+    var id = el.assetEditId.value;
+    if (id) {
+      var idx = assets.findIndex(function (a) { return a.id === id; });
+      if (idx !== -1) assets[idx] = Object.assign({}, assets[idx], data);
+    } else {
+      data.id = uid();
+      assets.push(data);
+    }
+    saveAssets();
+    renderAssets();
+  }
+
+  function startEditAsset(id) {
+    var a = assets.find(function (x) { return x.id === id; });
+    if (!a) return;
+    el.assetEditId.value = a.id;
+    el.assetNama.value = a.nama;
+    el.assetHarga.value = a.harga ? formatRupiah(a.harga) : "";
+    el.assetQty.value = a.qty;
+    el.assetTotalInput.value = formatRupiah(assetTotalOf(a));
+    el.assetPembayaran.value = a.pembayaran;
+    el.assetBulan.value = a.bulan;
+    el.assetFormTitle.textContent = "Edit Aset";
+    el.assetSubmitBtn.textContent = "Perbarui";
+    el.assetCancelEdit.hidden = false;
+    el.assetNama.focus();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function resetAssetForm() {
+    el.assetForm.reset();
+    el.assetEditId.value = "";
+    el.assetQty.value = 1;
+    el.assetPembayaran.value = "Hutang";
+    el.assetBulan.value = MONTHS_FULL[new Date().getMonth()];
+    el.assetFormTitle.textContent = "Tambah Aset";
+    el.assetSubmitBtn.textContent = "Simpan";
+    el.assetCancelEdit.hidden = true;
+  }
+
+  function removeAsset(id) {
+    var a = assets.find(function (x) { return x.id === id; });
+    if (!confirm("Hapus aset " + (a ? a.nama : "ini") + "?")) return;
+    assets = assets.filter(function (x) { return x.id !== id; });
+    saveAssets();
+    renderAssets();
+  }
+
+  function exportAssetCSV() {
+    var rows = getFilteredAssets();
+    if (!rows.length) { alert("Tidak ada aset untuk diekspor."); return; }
+    var header = ["Nama Barang", "Harga Satuan", "Qty", "Total", "Pembayaran", "Bulan"];
+    var lines = [header.join(",")];
+    rows.forEach(function (a) {
+      lines.push([
+        '"' + String(a.nama).replace(/"/g, '""') + '"',
+        a.harga || 0,
+        a.qty,
+        assetTotalOf(a),
+        a.pembayaran,
+        a.bulan
+      ].join(","));
+    });
+    var blob = new Blob(["﻿" + lines.join("\r\n")], { type: "text/csv;charset=utf-8;" });
+    var url = URL.createObjectURL(blob);
+    var link = document.createElement("a");
+    link.href = url;
+    link.download = "aset-" + new Date().toISOString().slice(0, 10) + ".csv";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }
+
   // ---- View switching ----
   function switchView(view) {
-    var isExpense = view === "expense";
-    el.viewCashflow.hidden = isExpense;
-    el.viewExpense.hidden = !isExpense;
+    el.viewCashflow.hidden = view !== "cashflow";
+    el.viewExpense.hidden = view !== "expense";
+    el.viewAsset.hidden = view !== "asset";
     el.navTabs.forEach(function (tab) {
       tab.classList.toggle("is-active", tab.getAttribute("data-view") === view);
     });
-    if (isExpense) renderExpense();
+    if (view === "expense") renderExpense();
+    if (view === "asset") renderAssets();
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -609,9 +875,42 @@
   el.expenseYear.addEventListener("change", renderExpense);
   el.exportExpenseBtn.addEventListener("click", exportExpenseCSV);
 
+  // Asset events
+  el.assetForm.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var harga = parseMoney(el.assetHarga.value);
+    var qty = parseInt(el.assetQty.value, 10) || 0;
+    var total = parseMoney(el.assetTotalInput.value);
+    if (harga && qty) total = harga * qty; // harga x qty selalu menang bila ada
+    if (!total) {
+      alert("Isi Harga Satuan + Qty, atau isi Total secara manual.");
+      return;
+    }
+    addOrUpdateAsset({
+      nama: el.assetNama.value.trim(),
+      harga: harga,
+      qty: qty || 1,
+      total: total,
+      pembayaran: el.assetPembayaran.value,
+      bulan: el.assetBulan.value
+    });
+    resetAssetForm();
+  });
+  el.assetCancelEdit.addEventListener("click", resetAssetForm);
+  el.assetSearch.addEventListener("input", renderAssets);
+  el.assetFilterBulan.addEventListener("change", renderAssets);
+  el.assetFilterPembayaran.addEventListener("change", renderAssets);
+  el.exportAssetBtn.addEventListener("click", exportAssetCSV);
+  el.assetHarga.addEventListener("input", computeFormTotal);
+  el.assetQty.addEventListener("input", computeFormTotal);
+  attachMoneyFormat(el.assetHarga);
+  attachMoneyFormat(el.assetTotalInput);
+
   // ---- Init ----
   populateCodes();
   resetForm();
   render();
   populateYears();
+  populateAssetSelectors();
+  resetAssetForm();
 })();

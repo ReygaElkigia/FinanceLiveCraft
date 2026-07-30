@@ -19,6 +19,7 @@
     <nav class="nav-tabs" aria-label="Menu utama">
       <button type="button" class="nav-tab is-active" data-view="cashflow">Cash Flow</button>
       <button type="button" class="nav-tab" data-view="expense">Expense Log</button>
+      <button type="button" class="nav-tab" data-view="asset">Aset</button>
     </nav>
   </header>
 
@@ -104,7 +105,7 @@
       <!-- Table -->
       <section class="panel table-panel">
         <div class="table-wrap">
-          <table id="txTable">
+          <table id="txTable" class="data-table">
             <thead>
               <tr>
                 <th class="col-date">Tanggal</th>
@@ -149,6 +150,116 @@
       <section class="panel table-panel">
         <div class="table-wrap" id="expenseWrap"></div>
         <p class="empty-state" id="expenseEmpty" hidden>Belum ada pengeluaran untuk tahun ini. Tambahkan transaksi Cash Out di menu Cash Flow.</p>
+      </section>
+    </div>
+
+    <!-- ==================== ASSET VIEW ==================== -->
+    <div id="view-asset" class="view" hidden>
+      <!-- Summary cards -->
+      <section class="summary summary-3" id="assetSummary">
+        <div class="card card-balance">
+          <span class="card-icon" aria-hidden="true">◆</span>
+          <div class="card-body">
+            <span class="card-label">Total Aset</span>
+            <span class="card-value" id="assetTotal">Rp0</span>
+          </div>
+        </div>
+        <div class="card card-count">
+          <span class="card-icon" aria-hidden="true">#</span>
+          <div class="card-body">
+            <span class="card-label">Jumlah Item</span>
+            <span class="card-value" id="assetCount">0</span>
+          </div>
+        </div>
+        <div class="card card-out">
+          <span class="card-icon" aria-hidden="true">↻</span>
+          <div class="card-body">
+            <span class="card-label">Total Hutang</span>
+            <span class="card-value" id="assetDebt">Rp0</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Entry form -->
+      <section class="panel">
+        <h2 class="panel-title" id="assetFormTitle">Tambah Aset</h2>
+        <form id="assetForm" class="asset-form" autocomplete="off">
+          <input type="hidden" id="assetEditId" />
+          <div class="field field-wide">
+            <label for="assetNama">Nama Barang</label>
+            <input type="text" id="assetNama" placeholder="mis. Komputer Wiliam" required />
+          </div>
+          <div class="field">
+            <label for="assetHarga">Harga Satuan</label>
+            <input type="text" inputmode="numeric" id="assetHarga" placeholder="Rp0" class="money-input" />
+          </div>
+          <div class="field">
+            <label for="assetQty">Qty</label>
+            <input type="number" id="assetQty" min="1" step="1" value="1" required />
+          </div>
+          <div class="field">
+            <label for="assetTotalInput">Total</label>
+            <input type="text" inputmode="numeric" id="assetTotalInput" placeholder="Rp0" class="money-input" />
+          </div>
+          <div class="field">
+            <label for="assetPembayaran">Pembayaran</label>
+            <select id="assetPembayaran" required>
+              <option value="Hutang">Hutang</option>
+              <option value="Cash">Cash</option>
+              <option value="Transfer">Transfer</option>
+              <option value="Debit">Debit</option>
+              <option value="Kartu Kredit">Kartu Kredit</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="assetBulan">Bulan</label>
+            <select id="assetBulan" required></select>
+          </div>
+          <div class="field field-actions">
+            <button type="submit" class="btn btn-primary" id="assetSubmitBtn">Simpan</button>
+            <button type="button" class="btn btn-ghost btn-outline" id="assetCancelEdit" hidden>Batal</button>
+          </div>
+        </form>
+      </section>
+
+      <!-- Filters row -->
+      <section class="toolbar">
+        <input type="search" id="assetSearch" class="search" placeholder="Cari nama barang..." />
+        <select id="assetFilterBulan" class="select-plain" aria-label="Filter bulan">
+          <option value="">Semua Bulan</option>
+        </select>
+        <select id="assetFilterPembayaran" class="select-plain" aria-label="Filter pembayaran">
+          <option value="">Semua Pembayaran</option>
+        </select>
+        <button id="exportAssetBtn" class="btn btn-primary" type="button">Export CSV</button>
+      </section>
+
+      <!-- Table -->
+      <section class="panel table-panel">
+        <div class="table-wrap">
+          <table id="assetTable" class="data-table">
+            <thead>
+              <tr>
+                <th class="col-desc">Nama Barang</th>
+                <th class="col-num">Harga Satuan</th>
+                <th class="col-num col-qty">Qty</th>
+                <th class="col-num">Total</th>
+                <th>Pembayaran</th>
+                <th>Bulan</th>
+                <th class="col-actions" aria-label="Aksi"></th>
+              </tr>
+            </thead>
+            <tbody id="assetBody"></tbody>
+            <tfoot>
+              <tr>
+                <td colspan="3" class="foot-label">Total Aset</td>
+                <td class="col-num" id="assetFootTotal">Rp0</td>
+                <td colspan="3"></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        <p class="empty-state" id="assetEmpty" hidden>Belum ada aset. Tambahkan aset pertama Anda di atas.</p>
       </section>
     </div>
   </main>
