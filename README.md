@@ -4,8 +4,8 @@ Website sederhana untuk mencatat arus kas (cashflow) seperti pada spreadsheet
 Livecraft: setiap transaksi memiliki **Tanggal**, **Kode**, **Keterangan**,
 **Cash Out**, dan **Cash In**.
 
-Aplikasi punya lima menu: **Cash Flow**, **Expense Log**, **Aset**, **Investasi**,
-dan **Sales**.
+Aplikasi punya enam menu: **Cash Flow**, **Expense Log**, **Aset**,
+**Investasi**, **Sales**, dan **Summary**.
 
 ## Fitur
 
@@ -51,6 +51,17 @@ dan **Sales**.
   **Cash Sales** dan **Cash Received from Non-Sales Activities**.
 - Baris **TOTAL**, total per kategori, selektor tahun, kartu ringkasan
   (Total Pendapatan, rata-rata, bulan tertinggi), dan Export CSV.
+
+### 6. Summary
+- **Otomatis** dihitung dari menu **Sales** & **Expense** (per bulan, per tahun):
+  - **Sales Log (Laba kotor)** — pendapatan
+  - **Expense Log (Beban)** — pengeluaran
+  - **Profit Log (Laba bersih)** — Pendapatan − Beban
+  - **Profit Log Person** — pembagian laba bersih: Wiliam 20%, Reyga 20%,
+    Kevin 20%, Investment 30%, Ads 10% (bisa diubah di `PROFIT_SHARES`
+    dalam `app.js`).
+- Kartu ringkasan tahunan (Total Pendapatan, Total Beban, Laba Bersih),
+  selektor tahun, dan Export CSV.
 
 Semua data disimpan otomatis di browser (**localStorage**) — tanpa backend.
 

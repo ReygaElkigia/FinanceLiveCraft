@@ -495,6 +495,19 @@ tfoot td {
 .sales-table tfoot .sales-grand .exp-cat,
 .sales-table tfoot .sales-grand .col-num { color: #fff !important; }
 
+/* Summary: neutral figures + colored section headers */
+.summary-table .col-num { color: var(--ink); }
+.summary-table .exp-total-col { color: var(--ink); }
+.summary-table .sum-head-sales th { background: #efce17; color: #3a3000; }
+.summary-table .sum-head-expense th { background: #e19a9a; color: #4a1414; }
+.summary-table .sum-head-profit th { background: #2aa85c; color: #fff; }
+@media (prefers-color-scheme: dark) {
+  .summary-table .sum-head-sales th { background: #b89a0f; color: #fff; }
+  .summary-table .sum-head-expense th { background: #a85454; color: #fff; }
+  .summary-table .sum-head-profit th { background: #1f8a4a; color: #fff; }
+}
+.sum-panel { margin-bottom: 1.25rem; }
+
 /* Footer */
 .app-footer {
   text-align: center;

@@ -103,6 +103,15 @@
   var EXPENSE_CODES = flattenCodes(EXPENSE_GROUPS);
   var SALES_CODES = flattenCodes(SALES_GROUPS);
 
+  // Pembagian laba bersih (Profit Log Person) — total harus 100%.
+  var PROFIT_SHARES = [
+    { name: "Wiliam",     pct: 0.20 },
+    { name: "Reyga",      pct: 0.20 },
+    { name: "Kevin",      pct: 0.20 },
+    { name: "Investment", pct: 0.30 },
+    { name: "Ads",        pct: 0.10 }
+  ];
+
   var MONTHS_SHORT = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Ags","Sep","Okt","Nov","Des"];
 
   // ---- State ----
@@ -183,7 +192,14 @@
     salesWrap: document.getElementById("salesWrap"),
     salesEmpty: document.getElementById("salesEmpty"),
     salesSummary: document.getElementById("salesSummary"),
-    exportSalesBtn: document.getElementById("exportSalesBtn")
+    exportSalesBtn: document.getElementById("exportSalesBtn"),
+    // Summary
+    viewSummary: document.getElementById("view-summary"),
+    summaryYear: document.getElementById("summaryYear"),
+    summaryWrap: document.getElementById("summaryWrap"),
+    summaryCards: document.getElementById("summaryCards"),
+    summaryEmpty: document.getElementById("summaryEmpty"),
+    exportSummaryBtn: document.getElementById("exportSummaryBtn")
   };
 
   var INVEST_CODE = "SHM"; // kode investasi di Cash Flow
@@ -1134,6 +1150,147 @@
     URL.revokeObjectURL(url);
   }
 
+  // ================= SUMMARY =================
+
+  // Jumlahkan matrix (per kode) menjadi total per bulan.
+  function monthTotalsOf(matrix, codes) {
+    var totals = new Array(12).fill(0);
+    codes.forEach(function (code) {
+      var vals = matrix[code] || [];
+      for (var m = 0; m < 12; m++) totals[m] += vals[m] || 0;
+    });
+    return totals;
+  }
+
+  function summaryYears() {
+    var set = {};
+    transactions.forEach(function (t) {
+      if (!t.tanggal) return;
+      var isSale = t.cashIn > 0 && SALES_CODES.indexOf(t.kode) !== -1;
+      var isExp = t.cashOut > 0 && EXPENSE_CODES.indexOf(t.kode) !== -1;
+      if (isSale || isExp) set[t.tanggal.slice(0, 4)] = true;
+    });
+    var years = Object.keys(set);
+    var nowY = String(new Date().getFullYear());
+    if (years.indexOf(nowY) === -1) years.push(nowY);
+    return years.sort().reverse();
+  }
+
+  function populateSummaryYears() {
+    var years = summaryYears();
+    var current = el.summaryYear.value;
+    el.summaryYear.innerHTML = "";
+    years.forEach(function (y) {
+      var o = document.createElement("option");
+      o.value = y; o.textContent = y;
+      el.summaryYear.appendChild(o);
+    });
+    if (current && years.indexOf(current) !== -1) {
+      el.summaryYear.value = current;
+    } else if (years.indexOf(String(new Date().getFullYear())) !== -1) {
+      el.summaryYear.value = String(new Date().getFullYear());
+    }
+  }
+
+  // Satu tabel ringkasan: baris berlabel, kolom bulan + total.
+  function buildSummaryTable(headerClass, title, rows) {
+    var html = '<table class="expense-table summary-table">';
+    html += '<thead><tr class="' + headerClass + '">';
+    html += '<th class="exp-cat">' + escapeHtml(title) + "</th>";
+    MONTHS_SHORT.forEach(function (m) { html += '<th class="col-num">' + m + "</th>"; });
+    html += '<th class="col-num exp-total-col">Total</th>';
+    html += "</tr></thead><tbody>";
+    rows.forEach(function (r) {
+      var rowTotal = r.values.reduce(function (a, b) { return a + b; }, 0);
+      html += "<tr>";
+      html += '<td class="exp-cat">' + escapeHtml(r.label) + "</td>";
+      for (var m = 0; m < 12; m++) html += '<td class="col-num">' + cell(r.values[m]) + "</td>";
+      html += '<td class="col-num exp-total-col">' + cell(rowTotal) + "</td>";
+      html += "</tr>";
+    });
+    html += "</tbody></table>";
+    return '<section class="panel table-panel sum-panel"><div class="table-wrap">' + html + "</div></section>";
+  }
+
+  function computeSummary(year) {
+    var sales = monthTotalsOf(computeSalesMatrix(year), SALES_CODES);
+    var expense = monthTotalsOf(computeExpenseMatrix(year), EXPENSE_CODES);
+    var profit = sales.map(function (s, i) { return s - expense[i]; });
+    return { sales: sales, expense: expense, profit: profit };
+  }
+
+  function renderSummary() {
+    populateSummaryYears();
+    var year = el.summaryYear.value || String(new Date().getFullYear());
+    var s = computeSummary(year);
+
+    var sum = function (a) { return a.reduce(function (x, y) { return x + y; }, 0); };
+    var grandSales = sum(s.sales), grandExp = sum(s.expense), grandProfit = grandSales - grandExp;
+
+    if (grandSales === 0 && grandExp === 0) {
+      el.summaryWrap.innerHTML = "";
+      el.summaryEmpty.hidden = false;
+      el.summaryCards.innerHTML = "";
+      return;
+    }
+    el.summaryEmpty.hidden = true;
+
+    var personRows = PROFIT_SHARES.map(function (p) {
+      return {
+        label: p.name + " (" + Math.round(p.pct * 100) + "%)",
+        values: s.profit.map(function (v) { return v * p.pct; })
+      };
+    });
+
+    el.summaryWrap.innerHTML =
+      buildSummaryTable("sum-head-sales", "Sales Log ( Laba kotor )", [{ label: "INTHEBOX", values: s.sales }]) +
+      buildSummaryTable("sum-head-expense", "Expense Log ( Beban )", [{ label: "INTHEBOX Expense", values: s.expense }]) +
+      buildSummaryTable("sum-head-profit", "Profit Log ( Laba bersih )", [{ label: "INTHEBOX", values: s.profit }]) +
+      buildSummaryTable("sum-head-profit", "Profit Log Person", personRows);
+
+    var cards = [
+      { label: "Total Pendapatan (Tahun)", value: formatRupiah(grandSales), cls: "card-in" },
+      { label: "Total Beban (Tahun)", value: formatRupiah(grandExp), cls: "card-out" },
+      { label: "Laba Bersih (Tahun)", value: formatRupiah(grandProfit), cls: "card-balance" }
+    ];
+    el.summaryCards.innerHTML = cards.map(function (c) {
+      return '<div class="card ' + c.cls + '"><div class="card-body">' +
+        '<span class="card-label">' + c.label + "</span>" +
+        '<span class="card-value">' + c.value + "</span></div></div>";
+    }).join("");
+  }
+
+  function exportSummaryCSV() {
+    var year = el.summaryYear.value || String(new Date().getFullYear());
+    var s = computeSummary(year);
+    var sum = function (a) { return a.reduce(function (x, y) { return x + y; }, 0); };
+    if (sum(s.sales) === 0 && sum(s.expense) === 0) {
+      alert("Tidak ada data untuk diekspor pada tahun " + year + ".");
+      return;
+    }
+
+    var lines = [["Bagian", "Item"].concat(MONTHS_SHORT).concat(["Total"]).join(",")];
+    function pushRow(section, label, values) {
+      lines.push(['"' + section + '"', '"' + label + '"'].concat(values.map(function (v) { return Math.round(v); })).concat([Math.round(sum(values))]).join(","));
+    }
+    pushRow("Sales Log (Laba kotor)", "INTHEBOX", s.sales);
+    pushRow("Expense Log (Beban)", "INTHEBOX Expense", s.expense);
+    pushRow("Profit Log (Laba bersih)", "INTHEBOX", s.profit);
+    PROFIT_SHARES.forEach(function (p) {
+      pushRow("Profit Log Person", p.name + " (" + Math.round(p.pct * 100) + "%)", s.profit.map(function (v) { return v * p.pct; }));
+    });
+
+    var blob = new Blob(["﻿" + lines.join("\r\n")], { type: "text/csv;charset=utf-8;" });
+    var url = URL.createObjectURL(blob);
+    var link = document.createElement("a");
+    link.href = url;
+    link.download = "summary-" + year + ".csv";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }
+
   // ---- View switching ----
   function switchView(view) {
     el.viewCashflow.hidden = view !== "cashflow";
@@ -1141,6 +1298,7 @@
     el.viewAsset.hidden = view !== "asset";
     el.viewInvest.hidden = view !== "invest";
     el.viewSales.hidden = view !== "sales";
+    el.viewSummary.hidden = view !== "summary";
     el.navTabs.forEach(function (tab) {
       tab.classList.toggle("is-active", tab.getAttribute("data-view") === view);
     });
@@ -1148,6 +1306,7 @@
     if (view === "asset") renderAssets();
     if (view === "invest") renderInvest();
     if (view === "sales") renderSales();
+    if (view === "summary") renderSummary();
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -1235,6 +1394,10 @@
   // Sales events
   el.salesYear.addEventListener("change", renderSales);
   el.exportSalesBtn.addEventListener("click", exportSalesCSV);
+
+  // Summary events
+  el.summaryYear.addEventListener("change", renderSummary);
+  el.exportSummaryBtn.addEventListener("click", exportSummaryCSV);
 
   // ---- Init ----
   populateCodes();

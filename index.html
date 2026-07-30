@@ -22,6 +22,7 @@
       <button type="button" class="nav-tab" data-view="asset">Aset</button>
       <button type="button" class="nav-tab" data-view="invest">Investasi</button>
       <button type="button" class="nav-tab" data-view="sales">Sales</button>
+      <button type="button" class="nav-tab" data-view="summary">Summary</button>
     </nav>
   </header>
 
@@ -351,6 +352,26 @@
         <div class="table-wrap" id="salesWrap"></div>
         <p class="empty-state" id="salesEmpty" hidden>Belum ada pendapatan untuk tahun ini. Tambahkan transaksi Cash In berkode penjualan (DP, NM, NC, INC, SOA, HTB) di menu Cash Flow.</p>
       </section>
+    </div>
+
+    <!-- ==================== SUMMARY VIEW ==================== -->
+    <div id="view-summary" class="view" hidden>
+      <section class="panel expense-head">
+        <div class="expense-head-text">
+          <h2 class="panel-title">Summary</h2>
+          <p class="expense-note">Otomatis dihitung dari menu <strong>Sales</strong> &amp; <strong>Expense</strong>. Laba bersih = Pendapatan − Beban, lalu dibagi sesuai porsi (Wiliam/Reyga/Kevin 20%, Investment 30%, Ads 10%).</p>
+        </div>
+        <div class="expense-controls">
+          <label class="inline-label" for="summaryYear">Tahun</label>
+          <select id="summaryYear" class="select-plain" aria-label="Pilih tahun"></select>
+          <button id="exportSummaryBtn" class="btn btn-primary" type="button">Export CSV</button>
+        </div>
+      </section>
+
+      <section class="expense-summary" id="summaryCards"></section>
+
+      <div id="summaryWrap"></div>
+      <p class="empty-state panel" id="summaryEmpty" hidden>Belum ada data. Tambahkan transaksi penjualan &amp; pengeluaran di menu Cash Flow.</p>
     </div>
   </main>
 
