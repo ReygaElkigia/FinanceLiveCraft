@@ -176,36 +176,46 @@
 
       var tdDate = document.createElement("td");
       tdDate.className = "col-date";
+      tdDate.setAttribute("data-label", "Tanggal");
       tdDate.textContent = formatDate(t.tanggal);
 
       var tdCode = document.createElement("td");
+      tdCode.setAttribute("data-label", "Kode");
       var badge = document.createElement("span");
       badge.className = "badge";
       badge.textContent = t.kode;
       tdCode.appendChild(badge);
 
       var tdDesc = document.createElement("td");
+      tdDesc.className = "col-desc";
+      tdDesc.setAttribute("data-label", "Keterangan");
       tdDesc.textContent = t.keterangan;
 
       var tdOut = document.createElement("td");
       tdOut.className = "col-num neg";
+      tdOut.setAttribute("data-label", "Cash Out");
       tdOut.textContent = t.cashOut ? formatRupiah(t.cashOut) : "";
 
       var tdIn = document.createElement("td");
       tdIn.className = "col-num pos";
+      tdIn.setAttribute("data-label", "Cash In");
       tdIn.textContent = t.cashIn ? formatRupiah(t.cashIn) : "";
 
       var tdAct = document.createElement("td");
       tdAct.className = "col-actions";
       var editBtn = document.createElement("button");
       editBtn.className = "icon-btn";
+      editBtn.type = "button";
       editBtn.title = "Edit";
-      editBtn.textContent = "✎";
+      editBtn.setAttribute("aria-label", "Edit transaksi");
+      editBtn.innerHTML = '<span aria-hidden="true">✎</span>';
       editBtn.addEventListener("click", function () { startEdit(t.id); });
       var delBtn = document.createElement("button");
       delBtn.className = "icon-btn del";
+      delBtn.type = "button";
       delBtn.title = "Hapus";
-      delBtn.textContent = "🗑";
+      delBtn.setAttribute("aria-label", "Hapus transaksi");
+      delBtn.innerHTML = '<span aria-hidden="true">🗑</span>';
       delBtn.addEventListener("click", function () { removeTx(t.id); });
       tdAct.appendChild(editBtn);
       tdAct.appendChild(delBtn);
