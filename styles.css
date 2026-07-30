@@ -484,6 +484,17 @@ tfoot td {
   .exp-grand .exp-cat, .exp-grand .col-num { color: #fff !important; }
 }
 
+/* Sales Log: income figures shown in green, grand total row in green */
+.sales-table .col-num { color: var(--in); }
+.sales-table .exp-total-col { color: var(--in); }
+.sales-table tfoot .sales-grand td {
+  background: var(--green-700) !important;
+  color: #fff !important;
+  border-top: 2px solid var(--green-800);
+}
+.sales-table tfoot .sales-grand .exp-cat,
+.sales-table tfoot .sales-grand .col-num { color: #fff !important; }
+
 /* Footer */
 .app-footer {
   text-align: center;

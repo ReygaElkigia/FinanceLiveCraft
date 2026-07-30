@@ -16,14 +16,19 @@
     { code: "ADS",  label: "Iklan / Ads" },
     { code: "AST",  label: "Aset / Perlengkapan" },
     { code: "CMS",  label: "Komisi" },
+    { code: "DP",   label: "INTHEBOX DP (Penjualan)" },
     { code: "EAT",  label: "Makan / Konsumsi" },
     { code: "GH",   label: "Gaji / Honor" },
+    { code: "HTB",  label: "Hutang Bank / Pinjaman" },
     { code: "INC",  label: "Income / Pemasukan" },
     { code: "INT",  label: "Internet" },
+    { code: "NC",   label: "INTHEBOX Komisi (Penjualan)" },
+    { code: "NM",   label: "INTHEBOX Bulanan (Penjualan)" },
     { code: "OEX",  label: "Operasional Lain" },
     { code: "PLN",  label: "Listrik / PLN" },
     { code: "RMH",  label: "Rumah / Sewa" },
     { code: "SHM",  label: "Saham / Investasi" },
+    { code: "SOA",  label: "Sale of Asset (Penjualan Aset)" },
     { code: "TRAN", label: "Transportasi" }
   ];
 
@@ -67,6 +72,36 @@
       ]
     }
   ];
+
+  // Struktur Sales Log (mengikuti spreadsheet SALES LOG). Nilai diambil
+  // otomatis dari transaksi Cash In pada kode-kode penjualan di bawah.
+  var SALES_GROUPS = [
+    {
+      title: "Cash Sales",
+      rows: [
+        { code: "DP",  label: "INTHEBOX DP" },
+        { code: "NM",  label: "INTHEBOX (Monthly)" },
+        { code: "NC",  label: "INTHEBOX (Commission)" },
+        { code: "INC", label: "Income Lainnya" }
+      ]
+    },
+    {
+      title: "Cash Received from Non-Sales Activities",
+      rows: [
+        { code: "SOA", label: "Sale of Asset" },
+        { code: "HTB", label: "Pengajuan Hutang ke Bank" }
+      ]
+    }
+  ];
+
+  // Kumpulan kode per menu (agar total baris & total kolom selalu konsisten).
+  function flattenCodes(groups) {
+    var out = [];
+    groups.forEach(function (g) { g.rows.forEach(function (r) { out.push(r.code); }); });
+    return out;
+  }
+  var EXPENSE_CODES = flattenCodes(EXPENSE_GROUPS);
+  var SALES_CODES = flattenCodes(SALES_GROUPS);
 
   var MONTHS_SHORT = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Ags","Sep","Okt","Nov","Des"];
 
@@ -141,7 +176,14 @@
     investFootIn: document.getElementById("investFootIn"),
     investFootOut: document.getElementById("investFootOut"),
     investFootNet: document.getElementById("investFootNet"),
-    exportInvestBtn: document.getElementById("exportInvestBtn")
+    exportInvestBtn: document.getElementById("exportInvestBtn"),
+    // Sales
+    viewSales: document.getElementById("view-sales"),
+    salesYear: document.getElementById("salesYear"),
+    salesWrap: document.getElementById("salesWrap"),
+    salesEmpty: document.getElementById("salesEmpty"),
+    salesSummary: document.getElementById("salesSummary"),
+    exportSalesBtn: document.getElementById("exportSalesBtn")
   };
 
   var INVEST_CODE = "SHM"; // kode investasi di Cash Flow
@@ -481,12 +523,14 @@
     var matrix = computeExpenseMatrix(year);
 
     // Total per bulan (baris TOTAL OPERATING EXPENSE) & grand total.
+    // Hanya kode pengeluaran yang dihitung agar total = jumlah baris tampil.
     var monthTotals = new Array(12).fill(0);
     var grandTotal = 0;
-    Object.keys(matrix).forEach(function (code) {
+    EXPENSE_CODES.forEach(function (code) {
+      var vals = matrix[code] || [];
       for (var m = 0; m < 12; m++) {
-        monthTotals[m] += matrix[code][m];
-        grandTotal += matrix[code][m];
+        monthTotals[m] += vals[m] || 0;
+        grandTotal += vals[m] || 0;
       }
     });
 
@@ -505,18 +549,18 @@
     return value ? formatRupiah(value) : "";
   }
 
-  function buildExpenseTable(matrix, monthTotals) {
-    var html = '<table class="expense-table">';
+  // Pembangun tabel matrix generik (dipakai Expense Log & Sales Log).
+  function buildMatrixTable(groups, matrix, monthTotals, opts) {
+    var html = '<table class="expense-table ' + (opts.tableClass || "") + '">';
 
-    // Header
     html += "<thead><tr>";
-    html += '<th class="exp-cat">Kategori Pengeluaran</th>';
+    html += '<th class="exp-cat">' + escapeHtml(opts.catLabel) + "</th>";
     MONTHS_SHORT.forEach(function (m) { html += '<th class="col-num">' + m + "</th>"; });
     html += '<th class="col-num exp-total-col">Total</th>';
     html += "</tr></thead>";
 
     html += "<tbody>";
-    EXPENSE_GROUPS.forEach(function (group) {
+    groups.forEach(function (group) {
       html += '<tr class="exp-group"><td colspan="14">' + group.title + "</td></tr>";
       group.rows.forEach(function (row) {
         var vals = matrix[row.code] || new Array(12).fill(0);
@@ -532,16 +576,22 @@
     });
     html += "</tbody>";
 
-    // Footer: total operating expense
     var grand = monthTotals.reduce(function (a, b) { return a + b; }, 0);
-    html += '<tfoot><tr class="exp-grand">';
-    html += '<td class="exp-cat">TOTAL OPERATING EXPENSE</td>';
+    html += '<tfoot><tr class="exp-grand ' + (opts.grandClass || "") + '">';
+    html += '<td class="exp-cat">' + escapeHtml(opts.totalLabel) + "</td>";
     monthTotals.forEach(function (v) { html += '<td class="col-num">' + cell(v) + "</td>"; });
     html += '<td class="col-num exp-total-col">' + formatRupiah(grand) + "</td>";
     html += "</tr></tfoot>";
 
     html += "</table>";
     return html;
+  }
+
+  function buildExpenseTable(matrix, monthTotals) {
+    return buildMatrixTable(EXPENSE_GROUPS, matrix, monthTotals, {
+      catLabel: "Kategori Pengeluaran",
+      totalLabel: "TOTAL OPERATING EXPENSE"
+    });
   }
 
   function renderExpenseSummary(matrix, monthTotals, grandTotal) {
@@ -578,8 +628,9 @@
     var year = el.expenseYear.value || String(new Date().getFullYear());
     var matrix = computeExpenseMatrix(year);
     var monthTotals = new Array(12).fill(0);
-    Object.keys(matrix).forEach(function (code) {
-      for (var m = 0; m < 12; m++) monthTotals[m] += matrix[code][m];
+    EXPENSE_CODES.forEach(function (code) {
+      var vals = matrix[code] || [];
+      for (var m = 0; m < 12; m++) monthTotals[m] += vals[m] || 0;
     });
     if (monthTotals.reduce(function (a, b) { return a + b; }, 0) === 0) {
       alert("Tidak ada pengeluaran untuk diekspor pada tahun " + year + ".");
@@ -947,18 +998,156 @@
     URL.revokeObjectURL(url);
   }
 
+  // ================= SALES LOG (Log Pendapatan) =================
+
+  function salesYears() {
+    var set = {};
+    transactions.forEach(function (t) {
+      if (t.cashIn > 0 && SALES_CODES.indexOf(t.kode) !== -1 && t.tanggal) {
+        set[t.tanggal.slice(0, 4)] = true;
+      }
+    });
+    var years = Object.keys(set);
+    var nowY = String(new Date().getFullYear());
+    if (years.indexOf(nowY) === -1) years.push(nowY);
+    return years.sort().reverse();
+  }
+
+  function populateSalesYears() {
+    var years = salesYears();
+    var current = el.salesYear.value;
+    el.salesYear.innerHTML = "";
+    years.forEach(function (y) {
+      var o = document.createElement("option");
+      o.value = y; o.textContent = y;
+      el.salesYear.appendChild(o);
+    });
+    if (current && years.indexOf(current) !== -1) {
+      el.salesYear.value = current;
+    } else if (years.indexOf(String(new Date().getFullYear())) !== -1) {
+      el.salesYear.value = String(new Date().getFullYear());
+    }
+  }
+
+  // Matrix pendapatan: cash in per kode penjualan per bulan.
+  function computeSalesMatrix(year) {
+    var matrix = {};
+    SALES_CODES.forEach(function (c) { matrix[c] = new Array(12).fill(0); });
+    transactions.forEach(function (t) {
+      if (!t.cashIn || t.cashIn <= 0) return;
+      if (!t.tanggal || t.tanggal.slice(0, 4) !== year) return;
+      if (!matrix[t.kode]) return; // hanya kode penjualan
+      var m = parseInt(t.tanggal.slice(5, 7), 10) - 1;
+      if (m < 0 || m > 11) return;
+      matrix[t.kode][m] += t.cashIn;
+    });
+    return matrix;
+  }
+
+  function renderSales() {
+    populateSalesYears();
+    var year = el.salesYear.value || String(new Date().getFullYear());
+    var matrix = computeSalesMatrix(year);
+
+    var monthTotals = new Array(12).fill(0);
+    var grandTotal = 0;
+    SALES_CODES.forEach(function (code) {
+      var vals = matrix[code] || [];
+      for (var m = 0; m < 12; m++) {
+        monthTotals[m] += vals[m] || 0;
+        grandTotal += vals[m] || 0;
+      }
+    });
+
+    if (grandTotal === 0) {
+      el.salesWrap.innerHTML = "";
+      el.salesEmpty.hidden = false;
+    } else {
+      el.salesEmpty.hidden = true;
+      el.salesWrap.innerHTML = buildMatrixTable(SALES_GROUPS, matrix, monthTotals, {
+        catLabel: "Kategori Pendapatan",
+        totalLabel: "TOTAL",
+        tableClass: "sales-table",
+        grandClass: "sales-grand"
+      });
+    }
+
+    renderSalesSummary(monthTotals, grandTotal);
+  }
+
+  function renderSalesSummary(monthTotals, grandTotal) {
+    var activeMonths = monthTotals.filter(function (v) { return v > 0; }).length;
+    var avg = activeMonths ? grandTotal / activeMonths : 0;
+    var maxIdx = -1, maxVal = 0;
+    monthTotals.forEach(function (v, i) { if (v > maxVal) { maxVal = v; maxIdx = i; } });
+
+    var cards = [
+      { label: "Total Pendapatan (Tahun)", value: formatRupiah(grandTotal), cls: "card-in" },
+      { label: "Rata-rata / Bulan Aktif", value: formatRupiah(avg), cls: "card-balance" },
+      {
+        label: "Bulan Tertinggi",
+        value: maxIdx >= 0 ? (MONTHS_SHORT[maxIdx] + " · " + formatRupiah(maxVal)) : "-",
+        cls: "card-count"
+      }
+    ];
+    el.salesSummary.innerHTML = cards.map(function (c) {
+      return '<div class="card ' + c.cls + '"><div class="card-body">' +
+        '<span class="card-label">' + c.label + "</span>" +
+        '<span class="card-value">' + c.value + "</span></div></div>";
+    }).join("");
+  }
+
+  function exportSalesCSV() {
+    var year = el.salesYear.value || String(new Date().getFullYear());
+    var matrix = computeSalesMatrix(year);
+    var monthTotals = new Array(12).fill(0);
+    SALES_CODES.forEach(function (code) {
+      var vals = matrix[code] || [];
+      for (var m = 0; m < 12; m++) monthTotals[m] += vals[m] || 0;
+    });
+    if (monthTotals.reduce(function (a, b) { return a + b; }, 0) === 0) {
+      alert("Tidak ada pendapatan untuk diekspor pada tahun " + year + ".");
+      return;
+    }
+
+    var lines = [];
+    lines.push(["Kategori", "Kode"].concat(MONTHS_SHORT).concat(["Total"]).join(","));
+    SALES_GROUPS.forEach(function (group) {
+      lines.push('"' + group.title + '"');
+      group.rows.forEach(function (row) {
+        var vals = matrix[row.code] || new Array(12).fill(0);
+        var rowTotal = vals.reduce(function (a, b) { return a + b; }, 0);
+        lines.push(['"' + row.label + '"', row.code].concat(vals).concat([rowTotal]).join(","));
+      });
+    });
+    var grand = monthTotals.reduce(function (a, b) { return a + b; }, 0);
+    lines.push(["TOTAL", ""].concat(monthTotals).concat([grand]).join(","));
+
+    var blob = new Blob(["﻿" + lines.join("\r\n")], { type: "text/csv;charset=utf-8;" });
+    var url = URL.createObjectURL(blob);
+    var link = document.createElement("a");
+    link.href = url;
+    link.download = "sales-log-" + year + ".csv";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }
+
   // ---- View switching ----
   function switchView(view) {
     el.viewCashflow.hidden = view !== "cashflow";
     el.viewExpense.hidden = view !== "expense";
     el.viewAsset.hidden = view !== "asset";
     el.viewInvest.hidden = view !== "invest";
+    el.viewSales.hidden = view !== "sales";
     el.navTabs.forEach(function (tab) {
       tab.classList.toggle("is-active", tab.getAttribute("data-view") === view);
     });
     if (view === "expense") renderExpense();
     if (view === "asset") renderAssets();
     if (view === "invest") renderInvest();
+    if (view === "sales") renderSales();
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -1042,6 +1231,10 @@
   // Investment events
   el.investYear.addEventListener("change", renderInvest);
   el.exportInvestBtn.addEventListener("click", exportInvestCSV);
+
+  // Sales events
+  el.salesYear.addEventListener("change", renderSales);
+  el.exportSalesBtn.addEventListener("click", exportSalesCSV);
 
   // ---- Init ----
   populateCodes();

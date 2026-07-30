@@ -4,13 +4,16 @@ Website sederhana untuk mencatat arus kas (cashflow) seperti pada spreadsheet
 Livecraft: setiap transaksi memiliki **Tanggal**, **Kode**, **Keterangan**,
 **Cash Out**, dan **Cash In**.
 
-Aplikasi punya empat menu: **Cash Flow**, **Expense Log**, **Aset**, dan **Investasi**.
+Aplikasi punya lima menu: **Cash Flow**, **Expense Log**, **Aset**, **Investasi**,
+dan **Sales**.
 
 ## Fitur
 
 ### 1. Cash Flow
 - **Input transaksi** dengan pilihan **Kode** lewat dropdown:
-  `ADM, ADS, AST, CMS, EAT, GH, INC, INT, OEX, PLN, RMH, SHM, TRAN`
+  `ADM, ADS, AST, CMS, DP, EAT, GH, HTB, INC, INT, NC, NM, OEX, PLN, RMH,
+  SHM, SOA, TRAN`
+  (kode penjualan `DP/NM/NC/SOA/HTB` dipakai untuk menu Sales)
 - Format **Rupiah** otomatis pada kolom uang.
 - **Ringkasan** Total Cash In, Total Cash Out, Saldo, dan jumlah transaksi
   (mengikuti filter yang aktif).
@@ -39,6 +42,15 @@ Aplikasi punya empat menu: **Cash Flow**, **Expense Log**, **Aset**, dan **Inves
 - Kartu ringkasan: **Total Setoran**, **Total Penarikan**, dan
   **Modal Tertanam (Bersih)**.
 - Selektor tahun dan Export CSV.
+
+### 5. Sales
+- **Otomatis** dihitung dari transaksi **Cash In** di Cash Flow untuk kode
+  penjualan: `DP, NM, NC, INC` (Cash Sales) dan `SOA, HTB` (Non-Sales).
+  Withdraw investasi (`SHM`) tidak dihitung sebagai penjualan.
+- Matriks pendapatan **per kategori × per bulan** (Jan–Des), dikelompokkan
+  **Cash Sales** dan **Cash Received from Non-Sales Activities**.
+- Baris **TOTAL**, total per kategori, selektor tahun, kartu ringkasan
+  (Total Pendapatan, rata-rata, bulan tertinggi), dan Export CSV.
 
 Semua data disimpan otomatis di browser (**localStorage**) — tanpa backend.
 

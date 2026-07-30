@@ -21,6 +21,7 @@
       <button type="button" class="nav-tab" data-view="expense">Expense Log</button>
       <button type="button" class="nav-tab" data-view="asset">Aset</button>
       <button type="button" class="nav-tab" data-view="invest">Investasi</button>
+      <button type="button" class="nav-tab" data-view="sales">Sales</button>
     </nav>
   </header>
 
@@ -327,6 +328,28 @@
           </table>
         </div>
         <p class="empty-state" id="investEmpty" hidden>Belum ada transaksi investasi. Tambahkan transaksi berkode <strong>SHM</strong> di menu Cash Flow.</p>
+      </section>
+    </div>
+
+    <!-- ==================== SALES LOG VIEW ==================== -->
+    <div id="view-sales" class="view" hidden>
+      <section class="panel expense-head">
+        <div class="expense-head-text">
+          <h2 class="panel-title">Sales Log / Log Pendapatan</h2>
+          <p class="expense-note">Otomatis dihitung dari transaksi <strong>Cash In</strong> di menu Cash Flow (kode penjualan: DP, NM, NC, INC, SOA, HTB) — dikelompokkan per kategori &amp; per bulan.</p>
+        </div>
+        <div class="expense-controls">
+          <label class="inline-label" for="salesYear">Tahun</label>
+          <select id="salesYear" class="select-plain" aria-label="Pilih tahun"></select>
+          <button id="exportSalesBtn" class="btn btn-primary" type="button">Export CSV</button>
+        </div>
+      </section>
+
+      <section class="expense-summary" id="salesSummary"></section>
+
+      <section class="panel table-panel">
+        <div class="table-wrap" id="salesWrap"></div>
+        <p class="empty-state" id="salesEmpty" hidden>Belum ada pendapatan untuk tahun ini. Tambahkan transaksi Cash In berkode penjualan (DP, NM, NC, INC, SOA, HTB) di menu Cash Flow.</p>
       </section>
     </div>
   </main>
