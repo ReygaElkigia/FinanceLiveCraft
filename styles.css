@@ -79,6 +79,32 @@ body {
 }
 .header-actions { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; }
 
+/* Nav tabs */
+.nav-tabs {
+  display: flex;
+  gap: 0.35rem;
+  background: rgba(255, 255, 255, 0.12);
+  padding: 0.25rem;
+  border-radius: 10px;
+}
+.nav-tab {
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+  background: transparent;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.nav-tab:hover { background: rgba(255, 255, 255, 0.12); }
+.nav-tab.is-active {
+  background: #fff;
+  color: var(--green-800);
+}
+
 /* Layout */
 .container {
   max-width: 1080px;
@@ -324,6 +350,107 @@ tfoot td {
   margin: 0;
 }
 
+/* ---------- Expense Log ---------- */
+.expense-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.expense-head .panel-title { margin: 0 0 0.35rem; }
+.expense-note {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+  max-width: 60ch;
+}
+.expense-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+.inline-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+.expense-controls .select-plain { width: auto; min-width: 100px; }
+
+.expense-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+.expense-summary:empty { display: none; }
+
+.expense-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  min-width: 900px;
+}
+.expense-table thead th {
+  background: var(--green-800);
+  color: #fff;
+  padding: 0.65rem 0.75rem;
+  white-space: nowrap;
+  text-align: right;
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+}
+.expense-table thead th.exp-cat { text-align: left; }
+.expense-table td {
+  padding: 0.55rem 0.75rem;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+.expense-table .exp-cat {
+  text-align: left;
+  position: sticky;
+  left: 0;
+  background: var(--card-bg);
+  z-index: 1;
+}
+.expense-table tbody tr:hover .exp-cat { background: var(--green-50); }
+.expense-table .col-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--out);
+}
+.expense-table tbody tr:hover td { background: var(--green-50); }
+
+.exp-group td {
+  background: var(--green-50);
+  font-weight: 700;
+  color: var(--green-700);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  font-size: 0.75rem;
+  position: sticky;
+  left: 0;
+}
+.exp-total-col {
+  font-weight: 700;
+  border-left: 2px solid var(--line);
+  background: rgba(33, 147, 95, 0.05) !important;
+}
+.exp-grand td {
+  background: var(--orange) !important;
+  color: #3a2a00 !important;
+  font-weight: 800;
+  border-top: 2px solid #d98f10;
+}
+.exp-grand .exp-cat { color: #3a2a00 !important; }
+.exp-grand .col-num { color: #3a2a00 !important; }
+@media (prefers-color-scheme: dark) {
+  .exp-grand td { background: #b9820f !important; color: #fff !important; }
+  .exp-grand .exp-cat, .exp-grand .col-num { color: #fff !important; }
+}
+
 /* Footer */
 .app-footer {
   text-align: center;
@@ -347,10 +474,16 @@ tfoot td {
   .entry-form { grid-template-columns: 1fr; }
   .container { padding: 1rem; }
 
-  .table-panel { background: transparent; box-shadow: none; overflow: visible; }
-  .table-wrap { overflow: visible; }
-  table, tbody, tr, td { display: block; width: 100%; }
-  thead, tfoot { display: none; }
+  /* Card-style transform applies to the Cash Flow table only */
+  #view-cashflow .table-panel { background: transparent; box-shadow: none; overflow: visible; }
+  #view-cashflow .table-wrap { overflow: visible; }
+  #txTable, #txTable tbody, #txTable tr, #txTable td { display: block; width: 100%; }
+  #txTable thead, #txTable tfoot { display: none; }
+
+  /* Expense Log stays a scrollable matrix on mobile */
+  .expense-summary { grid-template-columns: 1fr; }
+  .expense-head { flex-direction: column; align-items: stretch; }
+  .expense-controls { justify-content: flex-start; }
 
   #txBody tr {
     background: var(--card-bg);

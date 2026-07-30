@@ -16,114 +16,141 @@
         <p class="subtitle">Pencatatan Cashflow</p>
       </div>
     </div>
-    <div class="header-actions">
-      <select id="filterMonth" class="select-plain" aria-label="Filter bulan"></select>
-      <button id="exportBtn" class="btn btn-ghost" type="button">Export CSV</button>
-    </div>
+    <nav class="nav-tabs" aria-label="Menu utama">
+      <button type="button" class="nav-tab is-active" data-view="cashflow">Cash Flow</button>
+      <button type="button" class="nav-tab" data-view="expense">Expense Log</button>
+    </nav>
   </header>
 
   <main class="container">
-    <!-- Summary cards -->
-    <section class="summary" id="summary">
-      <div class="card card-in">
-        <span class="card-icon" aria-hidden="true">↓</span>
-        <div class="card-body">
-          <span class="card-label">Total Cash In</span>
-          <span class="card-value" id="totalIn">Rp0</span>
+    <!-- ==================== CASH FLOW VIEW ==================== -->
+    <div id="view-cashflow" class="view">
+      <!-- Summary cards -->
+      <section class="summary" id="summary">
+        <div class="card card-in">
+          <span class="card-icon" aria-hidden="true">↓</span>
+          <div class="card-body">
+            <span class="card-label">Total Cash In</span>
+            <span class="card-value" id="totalIn">Rp0</span>
+          </div>
         </div>
-      </div>
-      <div class="card card-out">
-        <span class="card-icon" aria-hidden="true">↑</span>
-        <div class="card-body">
-          <span class="card-label">Total Cash Out</span>
-          <span class="card-value" id="totalOut">Rp0</span>
+        <div class="card card-out">
+          <span class="card-icon" aria-hidden="true">↑</span>
+          <div class="card-body">
+            <span class="card-label">Total Cash Out</span>
+            <span class="card-value" id="totalOut">Rp0</span>
+          </div>
         </div>
-      </div>
-      <div class="card card-balance">
-        <span class="card-icon" aria-hidden="true">≈</span>
-        <div class="card-body">
-          <span class="card-label">Saldo (Balance)</span>
-          <span class="card-value" id="balance">Rp0</span>
+        <div class="card card-balance">
+          <span class="card-icon" aria-hidden="true">≈</span>
+          <div class="card-body">
+            <span class="card-label">Saldo (Balance)</span>
+            <span class="card-value" id="balance">Rp0</span>
+          </div>
         </div>
-      </div>
-      <div class="card card-count">
-        <span class="card-icon" aria-hidden="true">#</span>
-        <div class="card-body">
-          <span class="card-label">Jumlah Transaksi</span>
-          <span class="card-value" id="txCount">0</span>
+        <div class="card card-count">
+          <span class="card-icon" aria-hidden="true">#</span>
+          <div class="card-body">
+            <span class="card-label">Jumlah Transaksi</span>
+            <span class="card-value" id="txCount">0</span>
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
 
-    <!-- Entry form -->
-    <section class="panel">
-      <h2 class="panel-title" id="formTitle">Tambah Transaksi</h2>
-      <form id="entryForm" class="entry-form" autocomplete="off">
-        <input type="hidden" id="editId" />
-        <div class="field">
-          <label for="tanggal">Tanggal</label>
-          <input type="date" id="tanggal" required />
-        </div>
-        <div class="field">
-          <label for="kode">Kode</label>
-          <select id="kode" required>
-            <option value="" disabled selected>Pilih kode</option>
-          </select>
-        </div>
-        <div class="field field-wide">
-          <label for="keterangan">Keterangan</label>
-          <input type="text" id="keterangan" placeholder="mis. Belanja Telur, dll" required />
-        </div>
-        <div class="field">
-          <label for="cashOut">Cash Out</label>
-          <input type="text" inputmode="numeric" id="cashOut" placeholder="Rp0" class="money-input" />
-        </div>
-        <div class="field">
-          <label for="cashIn">Cash In</label>
-          <input type="text" inputmode="numeric" id="cashIn" placeholder="Rp0" class="money-input" />
-        </div>
-        <div class="field field-actions">
-          <button type="submit" class="btn btn-primary" id="submitBtn">Simpan</button>
-          <button type="button" class="btn btn-ghost" id="cancelEdit" hidden>Batal</button>
-        </div>
-      </form>
-    </section>
+      <!-- Entry form -->
+      <section class="panel">
+        <h2 class="panel-title" id="formTitle">Tambah Transaksi</h2>
+        <form id="entryForm" class="entry-form" autocomplete="off">
+          <input type="hidden" id="editId" />
+          <div class="field">
+            <label for="tanggal">Tanggal</label>
+            <input type="date" id="tanggal" required />
+          </div>
+          <div class="field">
+            <label for="kode">Kode</label>
+            <select id="kode" required>
+              <option value="" disabled selected>Pilih kode</option>
+            </select>
+          </div>
+          <div class="field field-wide">
+            <label for="keterangan">Keterangan</label>
+            <input type="text" id="keterangan" placeholder="mis. Belanja Telur, dll" required />
+          </div>
+          <div class="field">
+            <label for="cashOut">Cash Out</label>
+            <input type="text" inputmode="numeric" id="cashOut" placeholder="Rp0" class="money-input" />
+          </div>
+          <div class="field">
+            <label for="cashIn">Cash In</label>
+            <input type="text" inputmode="numeric" id="cashIn" placeholder="Rp0" class="money-input" />
+          </div>
+          <div class="field field-actions">
+            <button type="submit" class="btn btn-primary" id="submitBtn">Simpan</button>
+            <button type="button" class="btn btn-ghost btn-outline" id="cancelEdit" hidden>Batal</button>
+          </div>
+        </form>
+      </section>
 
-    <!-- Filters row -->
-    <section class="toolbar">
-      <input type="search" id="search" class="search" placeholder="Cari keterangan..." />
-      <select id="filterKode" class="select-plain" aria-label="Filter kode">
-        <option value="">Semua Kode</option>
-      </select>
-    </section>
+      <!-- Filters row -->
+      <section class="toolbar">
+        <input type="search" id="search" class="search" placeholder="Cari keterangan..." />
+        <select id="filterKode" class="select-plain" aria-label="Filter kode">
+          <option value="">Semua Kode</option>
+        </select>
+        <select id="filterMonth" class="select-plain" aria-label="Filter bulan"></select>
+        <button id="exportBtn" class="btn btn-primary" type="button">Export CSV</button>
+      </section>
 
-    <!-- Table -->
-    <section class="panel table-panel">
-      <div class="table-wrap">
-        <table id="txTable">
-          <thead>
-            <tr>
-              <th class="col-date">Tanggal</th>
-              <th class="col-code">Kode</th>
-              <th class="col-desc">Keterangan</th>
-              <th class="col-num">Cash Out</th>
-              <th class="col-num">Cash In</th>
-              <th class="col-actions" aria-label="Aksi"></th>
-            </tr>
-          </thead>
-          <tbody id="txBody"></tbody>
-          <tfoot>
-            <tr>
-              <td colspan="3" class="foot-label">Total</td>
-              <td class="col-num neg" id="footOut">Rp0</td>
-              <td class="col-num pos" id="footIn">Rp0</td>
-              <td></td>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
-      <p class="empty-state" id="emptyState" hidden>Belum ada transaksi. Tambahkan transaksi pertama Anda di atas.</p>
-    </section>
+      <!-- Table -->
+      <section class="panel table-panel">
+        <div class="table-wrap">
+          <table id="txTable">
+            <thead>
+              <tr>
+                <th class="col-date">Tanggal</th>
+                <th class="col-code">Kode</th>
+                <th class="col-desc">Keterangan</th>
+                <th class="col-num">Cash Out</th>
+                <th class="col-num">Cash In</th>
+                <th class="col-actions" aria-label="Aksi"></th>
+              </tr>
+            </thead>
+            <tbody id="txBody"></tbody>
+            <tfoot>
+              <tr>
+                <td colspan="3" class="foot-label">Total</td>
+                <td class="col-num neg" id="footOut">Rp0</td>
+                <td class="col-num pos" id="footIn">Rp0</td>
+                <td></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        <p class="empty-state" id="emptyState" hidden>Belum ada transaksi. Tambahkan transaksi pertama Anda di atas.</p>
+      </section>
+    </div>
+
+    <!-- ==================== EXPENSE LOG VIEW ==================== -->
+    <div id="view-expense" class="view" hidden>
+      <section class="panel expense-head">
+        <div class="expense-head-text">
+          <h2 class="panel-title">Expense Calculation</h2>
+          <p class="expense-note">Otomatis dihitung dari transaksi <strong>Cash Out</strong> di menu Cash Flow — dikelompokkan per kode &amp; per bulan.</p>
+        </div>
+        <div class="expense-controls">
+          <label class="inline-label" for="expenseYear">Tahun</label>
+          <select id="expenseYear" class="select-plain" aria-label="Pilih tahun"></select>
+          <button id="exportExpenseBtn" class="btn btn-primary" type="button">Export CSV</button>
+        </div>
+      </section>
+
+      <section class="expense-summary" id="expenseSummary"></section>
+
+      <section class="panel table-panel">
+        <div class="table-wrap" id="expenseWrap"></div>
+        <p class="empty-state" id="expenseEmpty" hidden>Belum ada pengeluaran untuk tahun ini. Tambahkan transaksi Cash Out di menu Cash Flow.</p>
+      </section>
+    </div>
   </main>
 
   <footer class="app-footer">

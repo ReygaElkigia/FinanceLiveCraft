@@ -23,6 +23,49 @@
     { code: "TRAN", label: "Transportasi" }
   ];
 
+  var CODE_LABEL = {};
+  CODES.forEach(function (c) { CODE_LABEL[c.code] = c.label; });
+
+  // Struktur Expense Log (mengikuti spreadsheet EXPENSE CALCULATION).
+  // Setiap baris memakai kode dari menu Cash Flow; kode INC (income) tidak
+  // termasuk karena bukan pengeluaran. Nilai diambil otomatis dari Cash Out.
+  var EXPENSE_GROUPS = [
+    {
+      title: "Salary & Wages Expense",
+      rows: [
+        { code: "GH",  label: "Gaji / Honor Live Streamer" },
+        { code: "SHM", label: "Investasi" }
+      ]
+    },
+    {
+      title: "Marketing Expense",
+      rows: [
+        { code: "ADS", label: "Iklan / Ads" }
+      ]
+    },
+    {
+      title: "General & Administrative Expense",
+      rows: [
+        { code: "ADM",  label: "Admin / Biaya Bank" },
+        { code: "TRAN", label: "Transportasi" },
+        { code: "AST",  label: "Belanja Perlengkapan" },
+        { code: "EAT",  label: "Biaya Makan" },
+        { code: "PLN",  label: "Listrik / Air" },
+        { code: "INT",  label: "Internet" },
+        { code: "CMS",  label: "Komisi" },
+        { code: "OEX",  label: "Other Expense" }
+      ]
+    },
+    {
+      title: "Other Expense",
+      rows: [
+        { code: "RMH", label: "Apartemen / Rumah" }
+      ]
+    }
+  ];
+
+  var MONTHS_SHORT = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Ags","Sep","Okt","Nov","Des"];
+
   // ---- State ----
   var transactions = load();
 
@@ -49,7 +92,16 @@
     balance: document.getElementById("balance"),
     txCount: document.getElementById("txCount"),
     footIn: document.getElementById("footIn"),
-    footOut: document.getElementById("footOut")
+    footOut: document.getElementById("footOut"),
+    // Expense Log
+    navTabs: document.querySelectorAll(".nav-tab"),
+    viewCashflow: document.getElementById("view-cashflow"),
+    viewExpense: document.getElementById("view-expense"),
+    expenseYear: document.getElementById("expenseYear"),
+    expenseWrap: document.getElementById("expenseWrap"),
+    expenseEmpty: document.getElementById("expenseEmpty"),
+    expenseSummary: document.getElementById("expenseSummary"),
+    exportExpenseBtn: document.getElementById("exportExpenseBtn")
   };
 
   // ---- Formatting helpers ----
@@ -318,6 +370,199 @@
     URL.revokeObjectURL(url);
   }
 
+  // ================= EXPENSE LOG =================
+
+  // Semua tahun yang ada di data (untuk dropdown tahun).
+  function availableYears() {
+    var set = {};
+    transactions.forEach(function (t) {
+      if (t.cashOut > 0 && t.tanggal) set[t.tanggal.slice(0, 4)] = true;
+    });
+    var years = Object.keys(set);
+    var nowY = String(new Date().getFullYear());
+    if (years.indexOf(nowY) === -1) years.push(nowY);
+    return years.sort().reverse();
+  }
+
+  function populateYears() {
+    var years = availableYears();
+    var current = el.expenseYear.value;
+    el.expenseYear.innerHTML = "";
+    years.forEach(function (y) {
+      var o = document.createElement("option");
+      o.value = y;
+      o.textContent = y;
+      el.expenseYear.appendChild(o);
+    });
+    if (current && years.indexOf(current) !== -1) {
+      el.expenseYear.value = current;
+    } else if (years.indexOf(String(new Date().getFullYear())) !== -1) {
+      el.expenseYear.value = String(new Date().getFullYear());
+    }
+  }
+
+  // Hitung matrix pengeluaran: matrix[code][0..11] = total cash out per bulan.
+  function computeExpenseMatrix(year) {
+    var matrix = {};
+    CODES.forEach(function (c) { matrix[c.code] = new Array(12).fill(0); });
+    transactions.forEach(function (t) {
+      if (!t.cashOut || t.cashOut <= 0) return;
+      if (!t.tanggal || t.tanggal.slice(0, 4) !== year) return;
+      var m = parseInt(t.tanggal.slice(5, 7), 10) - 1;
+      if (m < 0 || m > 11) return;
+      if (!matrix[t.kode]) matrix[t.kode] = new Array(12).fill(0);
+      matrix[t.kode][m] += t.cashOut;
+    });
+    return matrix;
+  }
+
+  function renderExpense() {
+    populateYears();
+    var year = el.expenseYear.value || String(new Date().getFullYear());
+    var matrix = computeExpenseMatrix(year);
+
+    // Total per bulan (baris TOTAL OPERATING EXPENSE) & grand total.
+    var monthTotals = new Array(12).fill(0);
+    var grandTotal = 0;
+    Object.keys(matrix).forEach(function (code) {
+      for (var m = 0; m < 12; m++) {
+        monthTotals[m] += matrix[code][m];
+        grandTotal += matrix[code][m];
+      }
+    });
+
+    if (grandTotal === 0) {
+      el.expenseWrap.innerHTML = "";
+      el.expenseEmpty.hidden = false;
+    } else {
+      el.expenseEmpty.hidden = true;
+      el.expenseWrap.innerHTML = buildExpenseTable(matrix, monthTotals);
+    }
+
+    renderExpenseSummary(matrix, monthTotals, grandTotal);
+  }
+
+  function cell(value) {
+    return value ? formatRupiah(value) : "";
+  }
+
+  function buildExpenseTable(matrix, monthTotals) {
+    var html = '<table class="expense-table">';
+
+    // Header
+    html += "<thead><tr>";
+    html += '<th class="exp-cat">Kategori Pengeluaran</th>';
+    MONTHS_SHORT.forEach(function (m) { html += '<th class="col-num">' + m + "</th>"; });
+    html += '<th class="col-num exp-total-col">Total</th>';
+    html += "</tr></thead>";
+
+    html += "<tbody>";
+    EXPENSE_GROUPS.forEach(function (group) {
+      html += '<tr class="exp-group"><td colspan="14">' + group.title + "</td></tr>";
+      group.rows.forEach(function (row) {
+        var vals = matrix[row.code] || new Array(12).fill(0);
+        var rowTotal = vals.reduce(function (a, b) { return a + b; }, 0);
+        html += "<tr>";
+        html += '<td class="exp-cat"><span class="badge">' + row.code + "</span> " + escapeHtml(row.label) + "</td>";
+        for (var m = 0; m < 12; m++) {
+          html += '<td class="col-num">' + cell(vals[m]) + "</td>";
+        }
+        html += '<td class="col-num exp-total-col">' + cell(rowTotal) + "</td>";
+        html += "</tr>";
+      });
+    });
+    html += "</tbody>";
+
+    // Footer: total operating expense
+    var grand = monthTotals.reduce(function (a, b) { return a + b; }, 0);
+    html += '<tfoot><tr class="exp-grand">';
+    html += '<td class="exp-cat">TOTAL OPERATING EXPENSE</td>';
+    monthTotals.forEach(function (v) { html += '<td class="col-num">' + cell(v) + "</td>"; });
+    html += '<td class="col-num exp-total-col">' + formatRupiah(grand) + "</td>";
+    html += "</tr></tfoot>";
+
+    html += "</table>";
+    return html;
+  }
+
+  function renderExpenseSummary(matrix, monthTotals, grandTotal) {
+    // Bulan dengan pengeluaran tertinggi & rata-rata bulan yang ada isinya.
+    var activeMonths = monthTotals.filter(function (v) { return v > 0; }).length;
+    var avg = activeMonths ? grandTotal / activeMonths : 0;
+    var maxIdx = -1, maxVal = 0;
+    monthTotals.forEach(function (v, i) { if (v > maxVal) { maxVal = v; maxIdx = i; } });
+
+    var cards = [
+      { label: "Total Pengeluaran (Tahun)", value: formatRupiah(grandTotal), cls: "card-out" },
+      { label: "Rata-rata / Bulan Aktif", value: formatRupiah(avg), cls: "card-balance" },
+      {
+        label: "Bulan Tertinggi",
+        value: maxIdx >= 0 ? (MONTHS_SHORT[maxIdx] + " · " + formatRupiah(maxVal)) : "-",
+        cls: "card-count"
+      }
+    ];
+
+    el.expenseSummary.innerHTML = cards.map(function (c) {
+      return '<div class="card ' + c.cls + '"><div class="card-body">' +
+        '<span class="card-label">' + c.label + "</span>" +
+        '<span class="card-value">' + c.value + "</span></div></div>";
+    }).join("");
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, function (ch) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch];
+    });
+  }
+
+  function exportExpenseCSV() {
+    var year = el.expenseYear.value || String(new Date().getFullYear());
+    var matrix = computeExpenseMatrix(year);
+    var monthTotals = new Array(12).fill(0);
+    Object.keys(matrix).forEach(function (code) {
+      for (var m = 0; m < 12; m++) monthTotals[m] += matrix[code][m];
+    });
+    if (monthTotals.reduce(function (a, b) { return a + b; }, 0) === 0) {
+      alert("Tidak ada pengeluaran untuk diekspor pada tahun " + year + ".");
+      return;
+    }
+
+    var lines = [];
+    lines.push(["Kategori", "Kode"].concat(MONTHS_SHORT).concat(["Total"]).join(","));
+    EXPENSE_GROUPS.forEach(function (group) {
+      lines.push('"' + group.title + '"');
+      group.rows.forEach(function (row) {
+        var vals = matrix[row.code] || new Array(12).fill(0);
+        var rowTotal = vals.reduce(function (a, b) { return a + b; }, 0);
+        lines.push(['"' + row.label + '"', row.code].concat(vals).concat([rowTotal]).join(","));
+      });
+    });
+    var grand = monthTotals.reduce(function (a, b) { return a + b; }, 0);
+    lines.push(["TOTAL OPERATING EXPENSE", ""].concat(monthTotals).concat([grand]).join(","));
+
+    var blob = new Blob(["﻿" + lines.join("\r\n")], { type: "text/csv;charset=utf-8;" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = "expense-log-" + year + ".csv";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  // ---- View switching ----
+  function switchView(view) {
+    var isExpense = view === "expense";
+    el.viewCashflow.hidden = isExpense;
+    el.viewExpense.hidden = !isExpense;
+    el.navTabs.forEach(function (tab) {
+      tab.classList.toggle("is-active", tab.getAttribute("data-view") === view);
+    });
+    if (isExpense) renderExpense();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   // ---- Money input live formatting ----
   function attachMoneyFormat(input) {
     input.addEventListener("input", function () {
@@ -355,8 +600,18 @@
   attachMoneyFormat(el.cashOut);
   attachMoneyFormat(el.cashIn);
 
+  // Expense Log events
+  el.navTabs.forEach(function (tab) {
+    tab.addEventListener("click", function () {
+      switchView(tab.getAttribute("data-view"));
+    });
+  });
+  el.expenseYear.addEventListener("change", renderExpense);
+  el.exportExpenseBtn.addEventListener("click", exportExpenseCSV);
+
   // ---- Init ----
   populateCodes();
   resetForm();
   render();
+  populateYears();
 })();
