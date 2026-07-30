@@ -20,6 +20,7 @@
       <button type="button" class="nav-tab is-active" data-view="cashflow">Cash Flow</button>
       <button type="button" class="nav-tab" data-view="expense">Expense Log</button>
       <button type="button" class="nav-tab" data-view="asset">Aset</button>
+      <button type="button" class="nav-tab" data-view="invest">Investasi</button>
     </nav>
   </header>
 
@@ -260,6 +261,72 @@
           </table>
         </div>
         <p class="empty-state" id="assetEmpty" hidden>Belum ada aset. Tambahkan aset pertama Anda di atas.</p>
+      </section>
+    </div>
+
+    <!-- ==================== INVESTMENT VIEW ==================== -->
+    <div id="view-invest" class="view" hidden>
+      <section class="panel expense-head">
+        <div class="expense-head-text">
+          <h2 class="panel-title">Investasi</h2>
+          <p class="expense-note">Otomatis diambil dari transaksi berkode <strong>SHM</strong> di menu Cash Flow. <strong>Setoran</strong> = Cash Out, <strong>Penarikan</strong> = Cash In.</p>
+        </div>
+        <div class="expense-controls">
+          <select id="investYear" class="select-plain" aria-label="Pilih tahun">
+            <option value="">Semua Tahun</option>
+          </select>
+          <button id="exportInvestBtn" class="btn btn-primary" type="button">Export CSV</button>
+        </div>
+      </section>
+
+      <section class="summary summary-3">
+        <div class="card card-in">
+          <span class="card-icon" aria-hidden="true">↑</span>
+          <div class="card-body">
+            <span class="card-label">Total Setoran</span>
+            <span class="card-value" id="investIn">Rp0</span>
+          </div>
+        </div>
+        <div class="card card-out">
+          <span class="card-icon" aria-hidden="true">↓</span>
+          <div class="card-body">
+            <span class="card-label">Total Penarikan</span>
+            <span class="card-value" id="investOut">Rp0</span>
+          </div>
+        </div>
+        <div class="card card-balance">
+          <span class="card-icon" aria-hidden="true">◆</span>
+          <div class="card-body">
+            <span class="card-label">Modal Tertanam (Bersih)</span>
+            <span class="card-value" id="investNet">Rp0</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel table-panel">
+        <div class="table-wrap">
+          <table id="investTable" class="data-table">
+            <thead>
+              <tr>
+                <th class="col-date">Tanggal</th>
+                <th class="col-desc">Keterangan</th>
+                <th class="col-num">Setoran</th>
+                <th class="col-num">Penarikan</th>
+                <th class="col-num">Saldo Berjalan</th>
+              </tr>
+            </thead>
+            <tbody id="investBody"></tbody>
+            <tfoot>
+              <tr>
+                <td colspan="2" class="foot-label">Total</td>
+                <td class="col-num pos" id="investFootIn">Rp0</td>
+                <td class="col-num neg" id="investFootOut">Rp0</td>
+                <td class="col-num" id="investFootNet">Rp0</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        <p class="empty-state" id="investEmpty" hidden>Belum ada transaksi investasi. Tambahkan transaksi berkode <strong>SHM</strong> di menu Cash Flow.</p>
       </section>
     </div>
   </main>

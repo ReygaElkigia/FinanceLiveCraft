@@ -328,6 +328,8 @@ tbody tr:hover { background: var(--green-50); }
 .pos { color: var(--in); font-weight: 600; }
 .neg { color: var(--out); font-weight: 600; }
 .col-qty { width: 60px; }
+.invest-saldo { font-weight: 700; color: var(--green-700); }
+@media (prefers-color-scheme: dark) { .invest-saldo { color: var(--in); } }
 
 /* Payment method badge */
 .pay-badge {

@@ -4,7 +4,7 @@ Website sederhana untuk mencatat arus kas (cashflow) seperti pada spreadsheet
 Livecraft: setiap transaksi memiliki **Tanggal**, **Kode**, **Keterangan**,
 **Cash Out**, dan **Cash In**.
 
-Aplikasi punya tiga menu: **Cash Flow**, **Expense Log**, dan **Aset**.
+Aplikasi punya empat menu: **Cash Flow**, **Expense Log**, **Aset**, dan **Investasi**.
 
 ## Fitur
 
@@ -31,6 +31,14 @@ Aplikasi punya tiga menu: **Cash Flow**, **Expense Log**, dan **Aset**.
   (Hutang/Cash/Transfer/Debit/Kartu Kredit), dan **Bulan**.
 - Kartu ringkasan: **Total Aset**, Jumlah Item, dan **Total Hutang**.
 - Filter bulan & pembayaran, pencarian, edit/hapus, dan Export CSV.
+
+### 4. Investasi
+- **Otomatis** diambil dari transaksi berkode **`SHM`** (Saham/Investasi) di
+  Cash Flow — **Setoran** = Cash Out, **Penarikan** = Cash In.
+- Ledger transaksi dengan **Saldo Berjalan** (modal tertanam kumulatif).
+- Kartu ringkasan: **Total Setoran**, **Total Penarikan**, dan
+  **Modal Tertanam (Bersih)**.
+- Selektor tahun dan Export CSV.
 
 Semua data disimpan otomatis di browser (**localStorage**) — tanpa backend.
 

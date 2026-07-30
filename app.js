@@ -129,8 +129,22 @@
     assetTotal: document.getElementById("assetTotal"),
     assetCount: document.getElementById("assetCount"),
     assetDebt: document.getElementById("assetDebt"),
-    assetFootTotal: document.getElementById("assetFootTotal")
+    assetFootTotal: document.getElementById("assetFootTotal"),
+    // Investment
+    viewInvest: document.getElementById("view-invest"),
+    investYear: document.getElementById("investYear"),
+    investBody: document.getElementById("investBody"),
+    investEmpty: document.getElementById("investEmpty"),
+    investIn: document.getElementById("investIn"),
+    investOut: document.getElementById("investOut"),
+    investNet: document.getElementById("investNet"),
+    investFootIn: document.getElementById("investFootIn"),
+    investFootOut: document.getElementById("investFootOut"),
+    investFootNet: document.getElementById("investFootNet"),
+    exportInvestBtn: document.getElementById("exportInvestBtn")
   };
+
+  var INVEST_CODE = "SHM"; // kode investasi di Cash Flow
 
   // ---- Formatting helpers ----
   function formatRupiah(n) {
@@ -816,16 +830,135 @@
     URL.revokeObjectURL(url);
   }
 
+  // ================= INVESTMENT (Investasi) =================
+
+  // Semua transaksi berkode SHM, urut tanggal menaik.
+  function getInvestTx() {
+    var year = el.investYear.value;
+    return transactions.filter(function (t) {
+      if (t.kode !== INVEST_CODE) return false;
+      if (year && (!t.tanggal || t.tanggal.slice(0, 4) !== year)) return false;
+      return true;
+    }).sort(function (a, b) {
+      if (a.tanggal !== b.tanggal) return a.tanggal < b.tanggal ? -1 : 1;
+      return a.id < b.id ? -1 : 1;
+    });
+  }
+
+  function populateInvestYears() {
+    var set = {};
+    transactions.forEach(function (t) {
+      if (t.kode === INVEST_CODE && t.tanggal) set[t.tanggal.slice(0, 4)] = true;
+    });
+    var years = Object.keys(set).sort().reverse();
+    var current = el.investYear.value;
+    el.investYear.innerHTML = '<option value="">Semua Tahun</option>';
+    years.forEach(function (y) {
+      var o = document.createElement("option");
+      o.value = y; o.textContent = y;
+      el.investYear.appendChild(o);
+    });
+    if (current && years.indexOf(current) !== -1) el.investYear.value = current;
+  }
+
+  function renderInvest() {
+    populateInvestYears();
+    var rows = getInvestTx();
+
+    el.investBody.innerHTML = "";
+    var totalIn = 0, totalOut = 0, running = 0;
+
+    rows.forEach(function (t) {
+      // Setoran = Cash Out (uang masuk investasi); Penarikan = Cash In.
+      var setoran = t.cashOut || 0;
+      var penarikan = t.cashIn || 0;
+      totalIn += setoran;
+      totalOut += penarikan;
+      running += setoran - penarikan;
+
+      var tr = document.createElement("tr");
+
+      var tdDate = document.createElement("td");
+      tdDate.className = "col-date";
+      tdDate.setAttribute("data-label", "Tanggal");
+      tdDate.textContent = formatDate(t.tanggal);
+
+      var tdDesc = document.createElement("td");
+      tdDesc.className = "col-desc";
+      tdDesc.setAttribute("data-label", "Keterangan");
+      tdDesc.textContent = t.keterangan;
+
+      var tdSet = document.createElement("td");
+      tdSet.className = "col-num pos";
+      tdSet.setAttribute("data-label", "Setoran");
+      tdSet.textContent = setoran ? formatRupiah(setoran) : "";
+
+      var tdTarik = document.createElement("td");
+      tdTarik.className = "col-num neg";
+      tdTarik.setAttribute("data-label", "Penarikan");
+      tdTarik.textContent = penarikan ? formatRupiah(penarikan) : "";
+
+      var tdSaldo = document.createElement("td");
+      tdSaldo.className = "col-num invest-saldo";
+      tdSaldo.setAttribute("data-label", "Saldo Berjalan");
+      tdSaldo.textContent = formatRupiah(running);
+
+      tr.appendChild(tdDate);
+      tr.appendChild(tdDesc);
+      tr.appendChild(tdSet);
+      tr.appendChild(tdTarik);
+      tr.appendChild(tdSaldo);
+      el.investBody.appendChild(tr);
+    });
+
+    el.investEmpty.hidden = rows.length !== 0;
+
+    el.investIn.textContent = formatRupiah(totalIn);
+    el.investOut.textContent = formatRupiah(totalOut);
+    el.investNet.textContent = formatRupiah(totalIn - totalOut);
+    el.investFootIn.textContent = formatRupiah(totalIn);
+    el.investFootOut.textContent = formatRupiah(totalOut);
+    el.investFootNet.textContent = formatRupiah(totalIn - totalOut);
+  }
+
+  function exportInvestCSV() {
+    var rows = getInvestTx();
+    if (!rows.length) { alert("Tidak ada transaksi investasi untuk diekspor."); return; }
+    var lines = [["Tanggal", "Keterangan", "Setoran", "Penarikan", "Saldo Berjalan"].join(",")];
+    var running = 0;
+    rows.forEach(function (t) {
+      running += (t.cashOut || 0) - (t.cashIn || 0);
+      lines.push([
+        t.tanggal,
+        '"' + String(t.keterangan).replace(/"/g, '""') + '"',
+        t.cashOut || 0,
+        t.cashIn || 0,
+        running
+      ].join(","));
+    });
+    var blob = new Blob(["﻿" + lines.join("\r\n")], { type: "text/csv;charset=utf-8;" });
+    var url = URL.createObjectURL(blob);
+    var link = document.createElement("a");
+    link.href = url;
+    link.download = "investasi-" + new Date().toISOString().slice(0, 10) + ".csv";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }
+
   // ---- View switching ----
   function switchView(view) {
     el.viewCashflow.hidden = view !== "cashflow";
     el.viewExpense.hidden = view !== "expense";
     el.viewAsset.hidden = view !== "asset";
+    el.viewInvest.hidden = view !== "invest";
     el.navTabs.forEach(function (tab) {
       tab.classList.toggle("is-active", tab.getAttribute("data-view") === view);
     });
     if (view === "expense") renderExpense();
     if (view === "asset") renderAssets();
+    if (view === "invest") renderInvest();
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -905,6 +1038,10 @@
   el.assetQty.addEventListener("input", computeFormTotal);
   attachMoneyFormat(el.assetHarga);
   attachMoneyFormat(el.assetTotalInput);
+
+  // Investment events
+  el.investYear.addEventListener("change", renderInvest);
+  el.exportInvestBtn.addEventListener("click", exportInvestCSV);
 
   // ---- Init ----
   populateCodes();
