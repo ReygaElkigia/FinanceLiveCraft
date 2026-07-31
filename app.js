@@ -424,6 +424,7 @@
     }
     save();
     render();
+    if (window.Charts) renderCashflowCharts();
   }
 
   function startEdit(id) {
@@ -458,6 +459,7 @@
     transactions = transactions.filter(function (x) { return x.id !== id; });
     save();
     render();
+    if (window.Charts) renderCashflowCharts();
   }
 
   // ---- Export CSV ----
@@ -559,6 +561,7 @@
     }
 
     renderExpenseSummary(matrix, monthTotals, grandTotal);
+    if (window.Charts) renderExpenseCharts(year, matrix);
   }
 
   function cell(value) {
@@ -812,6 +815,7 @@
     el.assetTotal.textContent = formatRupiah(total);
     el.assetCount.textContent = String(rows.length);
     el.assetDebt.textContent = formatRupiah(debt);
+    if (window.Charts) renderAssetCharts();
   }
 
   function computeFormTotal() {
@@ -986,6 +990,7 @@
     el.investFootIn.textContent = formatRupiah(totalIn);
     el.investFootOut.textContent = formatRupiah(totalOut);
     el.investFootNet.textContent = formatRupiah(totalIn - totalOut);
+    if (window.Charts) renderInvestCharts();
   }
 
   function exportInvestCSV() {
@@ -1089,6 +1094,7 @@
     }
 
     renderSalesSummary(monthTotals, grandTotal);
+    if (window.Charts) renderSalesCharts(year, matrix);
   }
 
   function renderSalesSummary(monthTotals, grandTotal) {
@@ -1231,6 +1237,7 @@
       el.summaryWrap.innerHTML = "";
       el.summaryEmpty.hidden = false;
       el.summaryCards.innerHTML = "";
+      if (window.Charts) renderSummaryCharts(s, grandProfit);
       return;
     }
     el.summaryEmpty.hidden = true;
@@ -1258,6 +1265,8 @@
         '<span class="card-label">' + c.label + "</span>" +
         '<span class="card-value">' + c.value + "</span></div></div>";
     }).join("");
+
+    if (window.Charts) renderSummaryCharts(s, grandProfit);
   }
 
   function exportSummaryCSV() {
@@ -1291,8 +1300,161 @@
     URL.revokeObjectURL(url);
   }
 
+  // ================= CHARTS =================
+  var PALETTE = ["--ser-1", "--ser-2", "--ser-3", "--ser-4", "--ser-5", "--ser-6"];
+  function $(id) { return document.getElementById(id); }
+  function sumArr(a) { return a.reduce(function (x, y) { return x + y; }, 0); }
+  function truncate(s, n) { return s.length > n ? s.slice(0, n - 1) + "…" : s; }
+
+  function latestYear(filter) {
+    var latest = "";
+    transactions.forEach(function (t) {
+      if (!t.tanggal) return;
+      if (filter && !filter(t)) return;
+      var y = t.tanggal.slice(0, 4);
+      if (y > latest) latest = y;
+    });
+    return latest || String(new Date().getFullYear());
+  }
+
+  // ---- Cash Flow charts ----
+  function renderCashflowCharts() {
+    var year = latestYear();
+    var inA = new Array(12).fill(0), outA = new Array(12).fill(0);
+    transactions.forEach(function (t) {
+      if (!t.tanggal || t.tanggal.slice(0, 4) !== year) return;
+      var m = parseInt(t.tanggal.slice(5, 7), 10) - 1;
+      if (m < 0 || m > 11) return;
+      inA[m] += t.cashIn || 0; outA[m] += t.cashOut || 0;
+    });
+    Charts.bars($("chartCashflow"), {
+      labels: MONTHS_SHORT,
+      series: [
+        { name: "Cash In (" + year + ")", colorVar: "--ser-1", values: inA },
+        { name: "Cash Out", colorVar: "--ser-2", values: outA }
+      ],
+      empty: "Belum ada transaksi."
+    });
+
+    var exp = computeExpenseMatrix(year);
+    var items = EXPENSE_CODES.map(function (code) {
+      return { label: truncate(code + " · " + (CODE_LABEL[code] || code), 22), value: sumArr(exp[code] || []) };
+    });
+    Charts.hbars($("chartCashflowTop"), { items: items, colorVar: "--ser-2", limit: 6, empty: "Belum ada pengeluaran." });
+  }
+
+  // ---- Expense charts ----
+  function renderExpenseCharts(year, matrix) {
+    var monthly = new Array(12).fill(0);
+    EXPENSE_CODES.forEach(function (code) {
+      var vals = matrix[code] || [];
+      for (var m = 0; m < 12; m++) monthly[m] += vals[m] || 0;
+    });
+    Charts.bars($("chartExpenseTrend"), {
+      labels: MONTHS_SHORT,
+      series: [{ name: "Beban", colorVar: "--ser-2", values: monthly }],
+      empty: "Belum ada beban."
+    });
+    var items = EXPENSE_CODES.map(function (code) {
+      return { label: truncate(code + " · " + (CODE_LABEL[code] || code), 22), value: sumArr(matrix[code] || []) };
+    });
+    Charts.hbars($("chartExpenseCat"), { items: items, colorVar: "--ser-2", limit: 8, empty: "Belum ada beban." });
+  }
+
+  // ---- Asset charts ----
+  function renderAssetCharts() {
+    var byPay = {}, byMonth = {};
+    MONTHS_FULL.forEach(function (m) { byMonth[m] = 0; });
+    assets.forEach(function (a) {
+      var tot = assetTotalOf(a);
+      byPay[a.pembayaran] = (byPay[a.pembayaran] || 0) + tot;
+      byMonth[a.bulan] = (byMonth[a.bulan] || 0) + tot;
+    });
+    var payItems = Object.keys(byPay).map(function (k, i) {
+      return { label: k, value: byPay[k], colorVar: PALETTE[i % PALETTE.length] };
+    });
+    Charts.donut($("chartAssetPay"), { items: payItems, centerLabel: "Total Aset", empty: "Belum ada aset." });
+
+    Charts.bars($("chartAssetMonth"), {
+      labels: MONTHS_SHORT,
+      series: [{ name: "Aset", colorVar: "--ser-1", values: MONTHS_FULL.map(function (m) { return byMonth[m] || 0; }) }],
+      empty: "Belum ada aset."
+    });
+  }
+
+  // ---- Investment charts ----
+  function renderInvestCharts() {
+    var year = el.investYear.value || latestYear(function (t) { return t.kode === INVEST_CODE; });
+    var setor = new Array(12).fill(0), tarik = new Array(12).fill(0);
+    transactions.forEach(function (t) {
+      if (t.kode !== INVEST_CODE || !t.tanggal || t.tanggal.slice(0, 4) !== year) return;
+      var m = parseInt(t.tanggal.slice(5, 7), 10) - 1;
+      if (m < 0 || m > 11) return;
+      setor[m] += t.cashOut || 0; tarik[m] += t.cashIn || 0;
+    });
+    var saldo = [], run = 0;
+    for (var m = 0; m < 12; m++) { run += setor[m] - tarik[m]; saldo.push(run); }
+    Charts.area($("chartInvestSaldo"), { labels: MONTHS_SHORT, values: saldo, colorVar: "--ser-1", empty: "Belum ada investasi." });
+    Charts.bars($("chartInvestFlow"), {
+      labels: MONTHS_SHORT,
+      series: [
+        { name: "Setoran (" + year + ")", colorVar: "--ser-1", values: setor },
+        { name: "Penarikan", colorVar: "--ser-2", values: tarik }
+      ],
+      empty: "Belum ada investasi."
+    });
+  }
+
+  // ---- Sales charts ----
+  function renderSalesCharts(year, matrix) {
+    var monthly = new Array(12).fill(0);
+    SALES_CODES.forEach(function (code) {
+      var vals = matrix[code] || [];
+      for (var m = 0; m < 12; m++) monthly[m] += vals[m] || 0;
+    });
+    Charts.bars($("chartSalesTrend"), {
+      labels: MONTHS_SHORT,
+      series: [{ name: "Pendapatan", colorVar: "--ser-1", values: monthly }],
+      empty: "Belum ada pendapatan."
+    });
+    var items = SALES_CODES.map(function (code) {
+      return { label: truncate(code + " · " + (CODE_LABEL[code] || code), 22), value: sumArr(matrix[code] || []) };
+    });
+    Charts.hbars($("chartSalesCat"), { items: items, colorVar: "--ser-1", limit: 8, empty: "Belum ada pendapatan." });
+  }
+
+  // ---- Summary charts ----
+  function renderSummaryCharts(s, grandProfit) {
+    Charts.bars($("chartSummaryCombo"), {
+      labels: MONTHS_SHORT,
+      series: [
+        { name: "Pendapatan", colorVar: "--ser-1", values: s.sales },
+        { name: "Beban", colorVar: "--ser-2", values: s.expense },
+        { name: "Laba Bersih", colorVar: "--ser-3", values: s.profit }
+      ],
+      empty: "Belum ada data.",
+      height: 260
+    });
+    var splitItems = PROFIT_SHARES.map(function (p, i) {
+      return { label: p.name + " (" + Math.round(p.pct * 100) + "%)", value: Math.max(0, grandProfit) * p.pct, colorVar: PALETTE[i % PALETTE.length] };
+    });
+    Charts.donut($("chartProfitSplit"), { items: splitItems, centerLabel: "Laba Bersih", empty: "Belum ada laba." });
+  }
+
+  function renderChartsFor(view) {
+    if (!window.Charts) return;
+    if (view === "cashflow") renderCashflowCharts();
+    else if (view === "expense") renderExpense();
+    else if (view === "asset") renderAssets();
+    else if (view === "invest") renderInvest();
+    else if (view === "sales") renderSales();
+    else if (view === "summary") renderSummary();
+  }
+
   // ---- View switching ----
+  var currentView = "cashflow";
   function switchView(view) {
+    currentView = view;
     el.viewCashflow.hidden = view !== "cashflow";
     el.viewExpense.hidden = view !== "expense";
     el.viewAsset.hidden = view !== "asset";
@@ -1302,6 +1464,7 @@
     el.navTabs.forEach(function (tab) {
       tab.classList.toggle("is-active", tab.getAttribute("data-view") === view);
     });
+    if (view === "cashflow") renderCashflowCharts();
     if (view === "expense") renderExpense();
     if (view === "asset") renderAssets();
     if (view === "invest") renderInvest();
@@ -1399,6 +1562,14 @@
   el.summaryYear.addEventListener("change", renderSummary);
   el.exportSummaryBtn.addEventListener("click", exportSummaryCSV);
 
+  // Re-render the active view's charts on resize (debounced) so SVG widths
+  // track the container.
+  var resizeTimer = null;
+  window.addEventListener("resize", function () {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function () { renderChartsFor(currentView); }, 180);
+  });
+
   // ---- Init ----
   populateCodes();
   resetForm();
@@ -1406,4 +1577,5 @@
   populateYears();
   populateAssetSelectors();
   resetAssetForm();
+  if (window.Charts) renderCashflowCharts();
 })();

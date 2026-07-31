@@ -23,6 +23,18 @@
   --grad-header: linear-gradient(125deg, #093a2b 0%, #0f5a40 55%, #178a5f 100%);
   --grad-primary: linear-gradient(135deg, var(--green-700), var(--green-600));
   --font: "Plus Jakarta Sans", "Segoe UI", system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif;
+  /* Chart palette (validated dataviz categorical order) + chrome */
+  --ser-1: #2a78d6;
+  --ser-2: #eb6834;
+  --ser-3: #1baf7a;
+  --ser-4: #eda100;
+  --ser-5: #e87ba4;
+  --ser-6: #008300;
+  --ch-ink: #182420;
+  --ch-muted: #6b7a72;
+  --ch-grid: #e7ede9;
+  --ch-track: #eef2f0;
+  --ch-axis: #c7d2cc;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -41,6 +53,17 @@
     --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.5), 0 24px 60px rgba(0, 0, 0, 0.5);
     --grad-header: linear-gradient(125deg, #06251b 0%, #0c3f2d 55%, #12604384 100%);
     --grad-primary: linear-gradient(135deg, var(--green-600), var(--green-500));
+    --ser-1: #3987e5;
+    --ser-2: #d95926;
+    --ser-3: #199e70;
+    --ser-4: #c98500;
+    --ser-5: #d55181;
+    --ser-6: #22a022;
+    --ch-ink: #e8f0ec;
+    --ch-muted: #93a49d;
+    --ch-grid: #232f2a;
+    --ch-track: #1b2521;
+    --ch-axis: #35443d;
   }
 }
 
@@ -579,6 +602,104 @@ tfoot td {
 }
 .sum-panel { margin-bottom: 1.25rem; }
 
+/* ---------- Charts / Dashboard ---------- */
+.dashboard {
+  display: grid;
+  gap: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+.dashboard-2 { grid-template-columns: 1fr 1fr; }
+.chart-card { margin-bottom: 0; display: flex; flex-direction: column; }
+.chart-title {
+  margin: 0 0 0.9rem;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.1px;
+}
+.chart-body { flex: 1; min-width: 0; }
+
+.chart-svg { width: 100%; height: auto; display: block; overflow: visible; }
+.chart-grid { stroke: var(--ch-grid); stroke-width: 1; }
+.chart-axis { stroke: var(--ch-axis); stroke-width: 1.5; }
+.chart-ytick, .chart-xtick {
+  fill: var(--ch-muted);
+  font-size: 11px;
+  font-family: var(--font);
+  font-variant-numeric: tabular-nums;
+}
+.chart-bar { transition: opacity 0.12s; }
+.chart-bar:hover { opacity: 0.82; cursor: default; }
+.chart-line { fill: none; stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
+.chart-area { stroke: none; }
+.chart-dot { stroke: var(--card-bg); stroke-width: 1.5; }
+.chart-track { fill: var(--ch-track); }
+.chart-hlabel {
+  fill: var(--ink);
+  font-size: 12px;
+  font-weight: 600;
+  font-family: var(--font);
+}
+.chart-vlabel {
+  fill: var(--ch-muted);
+  font-size: 11px;
+  font-family: var(--font);
+  font-variant-numeric: tabular-nums;
+}
+
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1rem;
+  margin-bottom: 0.75rem;
+}
+.chart-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+  font-weight: 600;
+}
+.chart-swatch {
+  width: 11px;
+  height: 11px;
+  border-radius: 3px;
+  flex: none;
+}
+.chart-legend-col { flex-direction: column; gap: 0.6rem; margin: 0; flex: 1; min-width: 0; }
+.chart-legend-col .chart-legend-item { align-items: flex-start; }
+.chart-legend-txt { display: flex; flex-direction: column; line-height: 1.25; min-width: 0; }
+.chart-legend-name { color: var(--ink); font-weight: 600; }
+.chart-legend-val { color: var(--muted); font-weight: 500; font-size: 0.75rem; font-variant-numeric: tabular-nums; }
+
+.chart-donut { display: flex; align-items: center; gap: 1.25rem; flex-wrap: wrap; }
+.chart-donut-svg { flex: none; }
+.chart-arc { stroke: var(--card-bg); stroke-width: 1.5; transition: opacity 0.12s; }
+.chart-arc:hover { opacity: 0.85; cursor: default; }
+.chart-donut-total {
+  fill: var(--ink);
+  font-size: 15px;
+  font-weight: 800;
+  font-family: var(--font);
+  font-variant-numeric: tabular-nums;
+}
+.chart-donut-sub {
+  fill: var(--ch-muted);
+  font-size: 10px;
+  font-family: var(--font);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.chart-empty {
+  display: grid;
+  place-items: center;
+  min-height: 160px;
+  color: var(--muted);
+  font-size: 0.88rem;
+  text-align: center;
+}
+
 /* Footer */
 .app-footer {
   text-align: center;
@@ -601,6 +722,7 @@ tfoot td {
 @media (max-width: 900px) {
   .summary { grid-template-columns: repeat(2, 1fr); }
   .summary.summary-3 { grid-template-columns: repeat(3, 1fr); }
+  .dashboard-2 { grid-template-columns: 1fr; }
   .entry-form { grid-template-columns: 1fr 1fr; }
   .asset-form { grid-template-columns: repeat(3, 1fr); }
   .field-wide { grid-column: 1 / -1; }

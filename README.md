@@ -63,6 +63,23 @@ Aplikasi punya enam menu: **Cash Flow**, **Expense Log**, **Aset**,
 - Kartu ringkasan tahunan (Total Pendapatan, Total Beban, Laba Bersih),
   selektor tahun, dan Export CSV.
 
+## Grafik Dashboard
+
+Setiap menu punya grafik yang otomatis mengikuti datanya:
+
+| Menu | Grafik |
+|------|--------|
+| Cash Flow | Cash In vs Cash Out per bulan (bar) + pengeluaran terbesar per kode (bar) |
+| Expense Log | Total beban per bulan (bar) + beban per kategori (bar) |
+| Aset | Komposisi aset per pembayaran (donut) + nilai aset per bulan (bar) |
+| Investasi | Saldo berjalan (area) + setoran vs penarikan per bulan (bar) |
+| Sales | Pendapatan per bulan (bar) + pendapatan per kategori (bar) |
+| Summary | Pendapatan · Beban · Laba per bulan (bar) + pembagian laba (donut) |
+
+Grafik digambar sebagai **SVG murni** (`charts.js`, tanpa library eksternal),
+warnanya mengikuti palet kategorikal yang sudah divalidasi aman untuk buta warna,
+dan menyesuaikan tema terang/gelap.
+
 Semua data disimpan otomatis di browser (**localStorage**) — tanpa backend.
 
 ## Cara Menjalankan
@@ -80,9 +97,10 @@ python3 -m http.server 8000
 
 | File | Keterangan |
 |------|------------|
-| `index.html` | Struktur halaman & tiga menu (Cash Flow, Expense Log, Aset) |
+| `index.html` | Struktur halaman & enam menu |
 | `styles.css` | Tampilan / tema hijau-oranye, responsif & dark mode |
-| `app.js` | Logika: CRUD, format Rupiah, filter, agregasi expense, export |
+| `app.js` | Logika: CRUD, format Rupiah, filter, agregasi, dashboard, export |
+| `charts.js` | Library grafik SVG mini (bar, area, donut) tanpa dependensi |
 
 ## Catatan
 

@@ -63,6 +63,18 @@
         </div>
       </section>
 
+      <!-- Dashboard -->
+      <section class="dashboard dashboard-2">
+        <div class="panel chart-card">
+          <h3 class="chart-title">Cash In vs Cash Out per Bulan</h3>
+          <div class="chart-body" id="chartCashflow"></div>
+        </div>
+        <div class="panel chart-card">
+          <h3 class="chart-title">Pengeluaran Terbesar per Kode</h3>
+          <div class="chart-body" id="chartCashflowTop"></div>
+        </div>
+      </section>
+
       <!-- Entry form -->
       <section class="panel">
         <h2 class="panel-title" id="formTitle">Tambah Transaksi</h2>
@@ -152,6 +164,17 @@
 
       <section class="expense-summary" id="expenseSummary"></section>
 
+      <section class="dashboard dashboard-2" id="expenseCharts">
+        <div class="panel chart-card">
+          <h3 class="chart-title">Total Beban per Bulan</h3>
+          <div class="chart-body" id="chartExpenseTrend"></div>
+        </div>
+        <div class="panel chart-card">
+          <h3 class="chart-title">Beban per Kategori</h3>
+          <div class="chart-body" id="chartExpenseCat"></div>
+        </div>
+      </section>
+
       <section class="panel table-panel">
         <div class="table-wrap" id="expenseWrap"></div>
         <p class="empty-state" id="expenseEmpty" hidden>Belum ada pengeluaran untuk tahun ini. Tambahkan transaksi Cash Out di menu Cash Flow.</p>
@@ -182,6 +205,18 @@
             <span class="card-label">Total Hutang</span>
             <span class="card-value" id="assetDebt">Rp0</span>
           </div>
+        </div>
+      </section>
+
+      <!-- Dashboard -->
+      <section class="dashboard dashboard-2">
+        <div class="panel chart-card">
+          <h3 class="chart-title">Komposisi Aset per Pembayaran</h3>
+          <div class="chart-body" id="chartAssetPay"></div>
+        </div>
+        <div class="panel chart-card">
+          <h3 class="chart-title">Nilai Aset per Bulan</h3>
+          <div class="chart-body" id="chartAssetMonth"></div>
         </div>
       </section>
 
@@ -307,6 +342,17 @@
         </div>
       </section>
 
+      <section class="dashboard dashboard-2">
+        <div class="panel chart-card">
+          <h3 class="chart-title">Saldo Berjalan (Modal Tertanam)</h3>
+          <div class="chart-body" id="chartInvestSaldo"></div>
+        </div>
+        <div class="panel chart-card">
+          <h3 class="chart-title">Setoran vs Penarikan per Bulan</h3>
+          <div class="chart-body" id="chartInvestFlow"></div>
+        </div>
+      </section>
+
       <section class="panel table-panel">
         <div class="table-wrap">
           <table id="investTable" class="data-table">
@@ -350,6 +396,17 @@
 
       <section class="expense-summary" id="salesSummary"></section>
 
+      <section class="dashboard dashboard-2" id="salesCharts">
+        <div class="panel chart-card">
+          <h3 class="chart-title">Pendapatan per Bulan</h3>
+          <div class="chart-body" id="chartSalesTrend"></div>
+        </div>
+        <div class="panel chart-card">
+          <h3 class="chart-title">Pendapatan per Kategori</h3>
+          <div class="chart-body" id="chartSalesCat"></div>
+        </div>
+      </section>
+
       <section class="panel table-panel">
         <div class="table-wrap" id="salesWrap"></div>
         <p class="empty-state" id="salesEmpty" hidden>Belum ada pendapatan untuk tahun ini. Tambahkan transaksi Cash In berkode penjualan (DP, NM, NC, INC, SOA, HTB) di menu Cash Flow.</p>
@@ -372,6 +429,17 @@
 
       <section class="expense-summary" id="summaryCards"></section>
 
+      <section class="dashboard dashboard-2">
+        <div class="panel chart-card">
+          <h3 class="chart-title">Pendapatan · Beban · Laba Bersih per Bulan</h3>
+          <div class="chart-body" id="chartSummaryCombo"></div>
+        </div>
+        <div class="panel chart-card">
+          <h3 class="chart-title">Pembagian Laba Bersih (Tahun)</h3>
+          <div class="chart-body" id="chartProfitSplit"></div>
+        </div>
+      </section>
+
       <div id="summaryWrap"></div>
       <p class="empty-state panel" id="summaryEmpty" hidden>Belum ada data. Tambahkan transaksi penjualan &amp; pengeluaran di menu Cash Flow.</p>
     </div>
@@ -381,6 +449,7 @@
     <span>Data tersimpan otomatis di browser ini (localStorage).</span>
   </footer>
 
+  <script src="charts.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
