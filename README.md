@@ -118,6 +118,31 @@ Secara default aplikasi menyimpan data di browser (localStorage). Untuk
 > saling percaya. Selama `supabase-config.js` masih berisi `YOUR_...`,
 > aplikasi tetap berjalan dengan penyimpanan lokal seperti biasa.
 
+## Hosting (GitHub Pages)
+
+Repo ini sudah menyertakan workflow **`.github/workflows/deploy-pages.yml`**
+yang otomatis mendeploy situs ke GitHub Pages setiap kali ada push.
+
+Cara mengaktifkan (sekali saja):
+
+1. Di GitHub, buka **Settings → Pages**.
+2. Bagian **Build and deployment → Source**, pilih **GitHub Actions**.
+3. Push ke branch (atau jalankan manual: tab **Actions → Deploy to GitHub
+   Pages → Run workflow**). Setelah selesai, alamat situs muncul di
+   **Settings → Pages** (mis. `https://<user>.github.io/financelivecraft/`).
+4. Bagikan alamat itu ke tim Anda.
+
+> Jika deploy diblokir karena proteksi branch pada environment, buka
+> **Settings → Environments → github-pages** dan izinkan branch yang dipakai.
+>
+> **Alternatif tanpa workflow**: Settings → Pages → Source **Deploy from a
+> branch** → pilih branch + folder `/ (root)`.
+
+**Tentang kunci Supabase di repo publik:** `anon key` memang dirancang untuk
+dipakai di sisi klien (publik) — keamanan dijaga oleh Row Level Security +
+login, jadi aman berada di `supabase-config.js`. Jangan pernah menaruh
+*service_role key* di sini.
+
 ## Cara Menjalankan
 
 Cukup buka `index.html` di browser. Tidak perlu instalasi apa pun.
