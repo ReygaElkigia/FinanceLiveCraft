@@ -15,8 +15,8 @@ Aplikasi punya enam menu: **Cash Flow**, **Expense Log**, **Aset**,
   plus **Total Cash In, Total Cash Out, dan Total Saldo** keseluruhan.
   Bisa difilter per akun.
 - **Input transaksi** dengan pilihan **Kode** lewat dropdown:
-  `ADM, ADS, AST, CMS, DP, EAT, GA, GH, HTB, INC, INT, NC, NM, OEX, PLN, RMH,
-  SHM, SOA, TRAN`
+  `ADM, ADS, AST, CMS, DP, EAT, GA, GCC, GH, HTB, INC, INT, NC, NM, OEX, PLN,
+  RMH, SHM, SOA, TRAN`
   (kode penjualan `DP/NM/NC/SOA/HTB` dipakai untuk menu Sales)
 - Format **Rupiah** otomatis pada kolom uang.
 - **Ringkasan** Total Cash In, Total Cash Out, Saldo, dan jumlah transaksi

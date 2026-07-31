@@ -21,6 +21,7 @@
     { code: "DP",   label: "INTHEBOX DP (Penjualan)" },
     { code: "EAT",  label: "Makan / Konsumsi" },
     { code: "GA",   label: "Gaji Admin & Co Host" },
+    { code: "GCC",  label: "Gaji Content Creator" },
     { code: "GH",   label: "Gaji / Honor" },
     { code: "HTB",  label: "Hutang Bank / Pinjaman" },
     { code: "INC",  label: "Income / Pemasukan" },
@@ -46,6 +47,7 @@
       title: "Salary & Wages Expense",
       rows: [
         { code: "GA",  label: "Gaji Admin & Co Host" },
+        { code: "GCC", label: "Gaji Content Creator" },
         { code: "GH",  label: "Gaji / Honor Live Streamer" },
         { code: "SHM", label: "Investasi" }
       ]
