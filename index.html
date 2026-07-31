@@ -63,6 +63,30 @@
         </div>
       </section>
 
+      <!-- Dana Darurat -->
+      <section class="panel emergency-panel">
+        <div class="emg-head">
+          <h2 class="panel-title">Dana Darurat</h2>
+          <button id="emgToggle" class="btn btn-primary" type="button">Atur</button>
+        </div>
+        <form id="emgForm" class="emg-form" autocomplete="off" hidden>
+          <div class="field">
+            <label for="emgAmount">Jumlah Dana Darurat</label>
+            <input type="text" inputmode="numeric" id="emgAmount" class="money-input" placeholder="Rp0" />
+          </div>
+          <div class="field">
+            <label for="emgDate">Dikurangi Cash Out sejak Tanggal</label>
+            <input type="date" id="emgDate" />
+          </div>
+          <div class="field field-actions">
+            <button type="submit" class="btn btn-primary">Simpan</button>
+            <button type="button" class="btn btn-ghost btn-outline" id="emgCancel">Batal</button>
+            <button type="button" class="btn btn-ghost btn-outline" id="emgReset">Hapus</button>
+          </div>
+        </form>
+        <div id="emgDisplay" class="emg-display"></div>
+      </section>
+
       <!-- Dashboard -->
       <section class="dashboard dashboard-2">
         <div class="panel chart-card">

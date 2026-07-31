@@ -6,6 +6,7 @@
 
   var STORAGE_KEY = "financelivecraft.transactions.v1";
   var ASSET_KEY = "financelivecraft.assets.v1";
+  var EMERGENCY_KEY = "financelivecraft.emergency.v1";
 
   var MONTHS_FULL = ["Januari","Februari","Maret","April","Mei","Juni","Juli",
     "Agustus","September","Oktober","November","Desember"];
@@ -142,6 +143,14 @@
     txCount: document.getElementById("txCount"),
     footIn: document.getElementById("footIn"),
     footOut: document.getElementById("footOut"),
+    // Dana Darurat
+    emgToggle: document.getElementById("emgToggle"),
+    emgForm: document.getElementById("emgForm"),
+    emgAmount: document.getElementById("emgAmount"),
+    emgDate: document.getElementById("emgDate"),
+    emgCancel: document.getElementById("emgCancel"),
+    emgReset: document.getElementById("emgReset"),
+    emgDisplay: document.getElementById("emgDisplay"),
     // Expense Log
     navTabs: document.querySelectorAll(".nav-tab"),
     viewCashflow: document.getElementById("view-cashflow"),
@@ -408,6 +417,8 @@
     el.totalOut.textContent = formatRupiah(totalOut);
     el.balance.textContent = formatRupiah(totalIn - totalOut);
     el.txCount.textContent = String(rows.length);
+
+    renderEmergency();
   }
 
   // ---- CRUD ----
@@ -487,6 +498,77 @@
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  }
+
+  // ================= DANA DARURAT (Emergency Fund) =================
+
+  function loadEmergency() {
+    try {
+      var raw = localStorage.getItem(EMERGENCY_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) { return null; }
+  }
+  function saveEmergency(v) {
+    try { localStorage.setItem(EMERGENCY_KEY, JSON.stringify(v)); }
+    catch (e) { alert("Gagal menyimpan dana darurat."); }
+  }
+
+  var emergency = loadEmergency();
+
+  // Total Cash Out sejak tanggal mulai (inklusif).
+  function emergencyUsed(startDate) {
+    var used = 0;
+    transactions.forEach(function (t) {
+      if (!t.tanggal || t.tanggal < startDate) return;
+      used += t.cashOut || 0;
+    });
+    return used;
+  }
+
+  function renderEmergency() {
+    if (!emergency || !emergency.amount) {
+      el.emgDisplay.innerHTML =
+        '<p class="emg-empty">Belum diatur. Klik <strong>Atur</strong> untuk menetapkan dana darurat; sisanya akan otomatis dikurangi Cash Out sejak tanggal yang dipilih.</p>';
+      return;
+    }
+    var amount = emergency.amount;
+    var start = emergency.startDate;
+    var used = emergencyUsed(start);
+    var sisa = amount - used;
+    var pct = amount > 0 ? Math.max(0, Math.min(1, sisa / amount)) : 0;
+
+    var state = sisa <= 0 ? "danger" : (sisa / amount < 0.3 ? "warn" : "ok");
+
+    el.emgDisplay.innerHTML =
+      '<div class="emg-top">' +
+        '<div class="emg-remaining">' +
+          '<span class="card-label">Sisa Dana Darurat</span>' +
+          '<span class="emg-value emg-' + state + '">' + formatRupiah(sisa) + "</span>" +
+        "</div>" +
+        '<div class="emg-figs">' +
+          '<div><span class="emg-fig-label">Dana Awal</span><span class="emg-fig-val">' + formatRupiah(amount) + "</span></div>" +
+          '<div><span class="emg-fig-label">Terpakai (Cash Out)</span><span class="emg-fig-val emg-used">' + formatRupiah(used) + "</span></div>" +
+        "</div>" +
+      "</div>" +
+      '<div class="emg-bar"><div class="emg-bar-fill emg-' + state + '" style="width:' + (pct * 100).toFixed(1) + '%"></div></div>' +
+      '<p class="emg-meta">Dihitung dari Cash Out sejak <strong>' + formatDate(start) + "</strong>" +
+        (sisa < 0 ? ' · <span class="emg-danger">melebihi dana darurat ' + formatRupiah(-sisa) + "</span>" : "") +
+      "</p>";
+  }
+
+  function openEmergencyForm() {
+    if (emergency) {
+      el.emgAmount.value = emergency.amount ? formatRupiah(emergency.amount) : "";
+      el.emgDate.value = emergency.startDate || "";
+    }
+    if (!el.emgDate.value) el.emgDate.value = new Date().toISOString().slice(0, 10);
+    el.emgForm.hidden = false;
+    el.emgToggle.hidden = true;
+    el.emgAmount.focus();
+  }
+  function closeEmergencyForm() {
+    el.emgForm.hidden = true;
+    el.emgToggle.hidden = false;
   }
 
   // ================= EXPENSE LOG =================
@@ -1509,6 +1591,29 @@
   el.exportBtn.addEventListener("click", exportCSV);
   attachMoneyFormat(el.cashOut);
   attachMoneyFormat(el.cashIn);
+
+  // Dana Darurat events
+  el.emgToggle.addEventListener("click", openEmergencyForm);
+  el.emgCancel.addEventListener("click", closeEmergencyForm);
+  attachMoneyFormat(el.emgAmount);
+  el.emgForm.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var amount = parseMoney(el.emgAmount.value);
+    var start = el.emgDate.value;
+    if (!amount) { alert("Isi jumlah dana darurat."); return; }
+    if (!start) { alert("Pilih tanggal mulai perhitungan."); return; }
+    emergency = { amount: amount, startDate: start };
+    saveEmergency(emergency);
+    closeEmergencyForm();
+    renderEmergency();
+  });
+  el.emgReset.addEventListener("click", function () {
+    if (!confirm("Hapus pengaturan dana darurat?")) return;
+    emergency = null;
+    try { localStorage.removeItem(EMERGENCY_KEY); } catch (e) {}
+    closeEmergencyForm();
+    renderEmergency();
+  });
 
   // Expense Log events
   el.navTabs.forEach(function (tab) {
