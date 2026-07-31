@@ -10,6 +10,10 @@ Aplikasi punya enam menu: **Cash Flow**, **Expense Log**, **Aset**,
 ## Fitur
 
 ### 1. Cash Flow
+- **Dua akun/dompet**: setiap transaksi ditandai **Livecraft** atau
+  **Keranjang**. Ditampilkan **Saldo per akun** (Cash In/Out masing-masing)
+  plus **Total Cash In, Total Cash Out, dan Total Saldo** keseluruhan.
+  Bisa difilter per akun.
 - **Input transaksi** dengan pilihan **Kode** lewat dropdown:
   `ADM, ADS, AST, CMS, DP, EAT, GH, HTB, INC, INT, NC, NM, OEX, PLN, RMH,
   SHM, SOA, TRAN`

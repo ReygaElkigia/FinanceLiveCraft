@@ -145,6 +145,7 @@
     form: document.getElementById("entryForm"),
     editId: document.getElementById("editId"),
     tanggal: document.getElementById("tanggal"),
+    akun: document.getElementById("akun"),
     kode: document.getElementById("kode"),
     keterangan: document.getElementById("keterangan"),
     cashOut: document.getElementById("cashOut"),
@@ -155,6 +156,7 @@
     txBody: document.getElementById("txBody"),
     emptyState: document.getElementById("emptyState"),
     search: document.getElementById("search"),
+    filterAkun: document.getElementById("filterAkun"),
     filterKode: document.getElementById("filterKode"),
     filterMonth: document.getElementById("filterMonth"),
     exportBtn: document.getElementById("exportBtn"),
@@ -162,6 +164,12 @@
     totalOut: document.getElementById("totalOut"),
     balance: document.getElementById("balance"),
     txCount: document.getElementById("txCount"),
+    liveSaldo: document.getElementById("liveSaldo"),
+    liveIn: document.getElementById("liveIn"),
+    liveOut: document.getElementById("liveOut"),
+    keranjangSaldo: document.getElementById("keranjangSaldo"),
+    keranjangIn: document.getElementById("keranjangIn"),
+    keranjangOut: document.getElementById("keranjangOut"),
     footIn: document.getElementById("footIn"),
     footOut: document.getElementById("footOut"),
     // Dana Darurat
@@ -355,10 +363,12 @@
     var q = el.search.value.trim().toLowerCase();
     var kode = el.filterKode.value;
     var month = el.filterMonth.value;
+    var akun = el.filterAkun.value;
 
     return transactions.filter(function (t) {
       if (kode && t.kode !== kode) return false;
       if (month && monthKey(t.tanggal) !== month) return false;
+      if (akun && (t.akun || "Livecraft") !== akun) return false;
       if (q && t.keterangan.toLowerCase().indexOf(q) === -1) return false;
       return true;
     }).sort(function (a, b) {
@@ -375,10 +385,14 @@
 
     el.txBody.innerHTML = "";
     var totalIn = 0, totalOut = 0;
+    var liveIn = 0, liveOut = 0, kerIn = 0, kerOut = 0;
 
     rows.forEach(function (t) {
       totalIn += t.cashIn;
       totalOut += t.cashOut;
+      var akun = t.akun || "Livecraft";
+      if (akun === "Keranjang") { kerIn += t.cashIn; kerOut += t.cashOut; }
+      else { liveIn += t.cashIn; liveOut += t.cashOut; }
 
       var tr = document.createElement("tr");
 
@@ -386,6 +400,13 @@
       tdDate.className = "col-date";
       tdDate.setAttribute("data-label", "Tanggal");
       tdDate.textContent = formatDate(t.tanggal);
+
+      var tdAkun = document.createElement("td");
+      tdAkun.setAttribute("data-label", "Akun");
+      var akunBadge = document.createElement("span");
+      akunBadge.className = "wallet-badge " + (akun === "Keranjang" ? "wallet-keranjang" : "wallet-live");
+      akunBadge.textContent = akun;
+      tdAkun.appendChild(akunBadge);
 
       var tdCode = document.createElement("td");
       tdCode.setAttribute("data-label", "Kode");
@@ -429,6 +450,7 @@
       tdAct.appendChild(delBtn);
 
       tr.appendChild(tdDate);
+      tr.appendChild(tdAkun);
       tr.appendChild(tdCode);
       tr.appendChild(tdDesc);
       tr.appendChild(tdOut);
@@ -447,6 +469,14 @@
     el.totalOut.textContent = formatRupiah(totalOut);
     el.balance.textContent = formatRupiah(totalIn - totalOut);
     el.txCount.textContent = String(rows.length);
+
+    // Saldo per akun
+    el.liveIn.textContent = formatRupiah(liveIn);
+    el.liveOut.textContent = formatRupiah(liveOut);
+    el.liveSaldo.textContent = formatRupiah(liveIn - liveOut);
+    el.keranjangIn.textContent = formatRupiah(kerIn);
+    el.keranjangOut.textContent = formatRupiah(kerOut);
+    el.keranjangSaldo.textContent = formatRupiah(kerIn - kerOut);
 
     renderEmergency();
   }
@@ -473,6 +503,7 @@
     if (!t) return;
     el.editId.value = t.id;
     el.tanggal.value = t.tanggal;
+    el.akun.value = t.akun || "Livecraft";
     el.kode.value = t.kode;
     el.keterangan.value = t.keterangan;
     el.cashOut.value = t.cashOut ? formatRupiah(t.cashOut) : "";
@@ -507,11 +538,12 @@
   function exportCSV() {
     var rows = getFiltered();
     if (!rows.length) { alert("Tidak ada data untuk diekspor."); return; }
-    var header = ["Tanggal", "Kode", "Keterangan", "Cash Out", "Cash In"];
+    var header = ["Tanggal", "Akun", "Kode", "Keterangan", "Cash Out", "Cash In"];
     var lines = [header.join(",")];
     rows.forEach(function (t) {
       var cells = [
         t.tanggal,
+        t.akun || "Livecraft",
         t.kode,
         '"' + String(t.keterangan).replace(/"/g, '""') + '"',
         t.cashOut,
@@ -1683,6 +1715,7 @@
 
     addOrUpdate({
       tanggal: el.tanggal.value,
+      akun: el.akun.value,
       kode: el.kode.value,
       keterangan: el.keterangan.value.trim(),
       cashOut: cashOut,
@@ -1693,6 +1726,7 @@
 
   el.cancelEdit.addEventListener("click", resetForm);
   el.search.addEventListener("input", render);
+  el.filterAkun.addEventListener("change", render);
   el.filterKode.addEventListener("change", render);
   el.filterMonth.addEventListener("change", render);
   el.exportBtn.addEventListener("click", exportCSV);

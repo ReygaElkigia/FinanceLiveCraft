@@ -31,7 +31,27 @@
   <main class="container">
     <!-- ==================== CASH FLOW VIEW ==================== -->
     <div id="view-cashflow" class="view">
-      <!-- Summary cards -->
+      <!-- Saldo per akun -->
+      <section class="summary wallet-summary">
+        <div class="card wallet-card card-live">
+          <span class="card-icon" aria-hidden="true">◈</span>
+          <div class="card-body">
+            <span class="card-label">Saldo Livecraft</span>
+            <span class="card-value" id="liveSaldo">Rp0</span>
+            <span class="wallet-sub">Masuk <b class="pos" id="liveIn">Rp0</b> · Keluar <b class="neg" id="liveOut">Rp0</b></span>
+          </div>
+        </div>
+        <div class="card wallet-card card-keranjang">
+          <span class="card-icon" aria-hidden="true">🧺</span>
+          <div class="card-body">
+            <span class="card-label">Saldo Keranjang</span>
+            <span class="card-value" id="keranjangSaldo">Rp0</span>
+            <span class="wallet-sub">Masuk <b class="pos" id="keranjangIn">Rp0</b> · Keluar <b class="neg" id="keranjangOut">Rp0</b></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Total keseluruhan -->
       <section class="summary" id="summary">
         <div class="card card-in">
           <span class="card-icon" aria-hidden="true">↓</span>
@@ -50,7 +70,7 @@
         <div class="card card-balance">
           <span class="card-icon" aria-hidden="true">≈</span>
           <div class="card-body">
-            <span class="card-label">Saldo (Balance)</span>
+            <span class="card-label">Total Saldo (Balance)</span>
             <span class="card-value" id="balance">Rp0</span>
           </div>
         </div>
@@ -109,6 +129,13 @@
             <input type="date" id="tanggal" required />
           </div>
           <div class="field">
+            <label for="akun">Akun</label>
+            <select id="akun" required>
+              <option value="Livecraft">Livecraft</option>
+              <option value="Keranjang">Keranjang</option>
+            </select>
+          </div>
+          <div class="field">
             <label for="kode">Kode</label>
             <select id="kode" required>
               <option value="" disabled selected>Pilih kode</option>
@@ -136,6 +163,11 @@
       <!-- Filters row -->
       <section class="toolbar">
         <input type="search" id="search" class="search" placeholder="Cari keterangan..." />
+        <select id="filterAkun" class="select-plain" aria-label="Filter akun">
+          <option value="">Semua Akun</option>
+          <option value="Livecraft">Livecraft</option>
+          <option value="Keranjang">Keranjang</option>
+        </select>
         <select id="filterKode" class="select-plain" aria-label="Filter kode">
           <option value="">Semua Kode</option>
         </select>
@@ -150,6 +182,7 @@
             <thead>
               <tr>
                 <th class="col-date">Tanggal</th>
+                <th class="col-code">Akun</th>
                 <th class="col-code">Kode</th>
                 <th class="col-desc">Keterangan</th>
                 <th class="col-num">Cash Out</th>
@@ -160,7 +193,7 @@
             <tbody id="txBody"></tbody>
             <tfoot>
               <tr>
-                <td colspan="3" class="foot-label">Total</td>
+                <td colspan="4" class="foot-label">Total</td>
                 <td class="col-num neg" id="footOut">Rp0</td>
                 <td class="col-num pos" id="footIn">Rp0</td>
                 <td></td>
