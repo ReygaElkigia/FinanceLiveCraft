@@ -91,6 +91,33 @@ dan menyesuaikan tema terang/gelap.
 
 Semua data disimpan otomatis di browser (**localStorage**) — tanpa backend.
 
+## Penyimpanan Cloud (Supabase) — data bersama + login
+
+Secara default aplikasi menyimpan data di browser (localStorage). Untuk
+**berbagi data antar-orang** dengan **login**, aktifkan Supabase:
+
+1. **Buat project** gratis di [supabase.com](https://supabase.com).
+2. **Buat tabel & keamanan**: buka **SQL Editor** → tempel isi
+   `supabase-setup.sql` → **Run**.
+3. **Isi kredensial**: buka **Project Settings → API**, salin **Project URL**
+   dan **anon public key** ke `supabase-config.js`:
+   ```js
+   window.SUPABASE_URL = "https://xxxx.supabase.co";
+   window.SUPABASE_ANON_KEY = "eyJ...";
+   ```
+4. **Buat pengguna**: **Authentication → Users → Add user** (email + password,
+   centang *Auto Confirm User*). Ulangi untuk tiap orang yang boleh akses.
+   Untuk menutup pendaftaran mandiri: **Authentication → Providers → Email**,
+   matikan *Enable Signups*.
+5. **Host web-nya** (mis. GitHub Pages / Netlify / Vercel) lalu bagikan
+   alamatnya. Setelah dikonfigurasi, aplikasi menampilkan **layar login** dan
+   semua yang masuk melihat **data yang sama**, sinkron otomatis (realtime).
+
+> Catatan: semua pengguna yang login berbagi satu workspace. Penyimpanan
+> memakai model *last-write-wins* per dataset — cocok untuk tim kecil yang
+> saling percaya. Selama `supabase-config.js` masih berisi `YOUR_...`,
+> aplikasi tetap berjalan dengan penyimpanan lokal seperti biasa.
+
 ## Cara Menjalankan
 
 Cukup buka `index.html` di browser. Tidak perlu instalasi apa pun.
@@ -110,6 +137,9 @@ python3 -m http.server 8000
 | `styles.css` | Tampilan / tema hijau-oranye, responsif & dark mode |
 | `app.js` | Logika: CRUD, format Rupiah, filter, agregasi, dashboard, export |
 | `charts.js` | Library grafik SVG mini (bar, area, donut) tanpa dependensi |
+| `cloud.js` | Lapisan penyimpanan cloud + login (Supabase) |
+| `supabase-config.js` | Kredensial Supabase (diisi pengguna) |
+| `supabase-setup.sql` | Skrip pembuatan tabel & keamanan di Supabase |
 
 ## Catatan
 

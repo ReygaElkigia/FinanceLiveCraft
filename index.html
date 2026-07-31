@@ -26,7 +26,44 @@
       <button type="button" class="nav-tab" data-view="sales">Sales</button>
       <button type="button" class="nav-tab" data-view="summary">Summary</button>
     </nav>
+    <div id="userBox" class="user-box" hidden>
+      <span id="userEmail" class="user-email"></span>
+      <button id="logoutBtn" class="btn btn-ghost btn-sm" type="button">Keluar</button>
+    </div>
   </header>
+
+  <!-- Gerbang login (hanya aktif bila cloud dikonfigurasi) -->
+  <div id="authGate" class="auth-gate" hidden>
+    <div class="auth-card">
+      <div class="auth-brand">
+        <span class="brand-mark">✳</span>
+        <div>
+          <h1>FinanceLiveCraft</h1>
+          <p class="subtitle">Pencatatan Cashflow</p>
+        </div>
+      </div>
+      <div id="authLoading" class="auth-loading">Memuat…</div>
+      <form id="authForm" class="auth-form" autocomplete="on" hidden>
+        <h2 id="authTitle">Masuk</h2>
+        <p class="auth-sub" id="authSub">Masuk untuk mengakses data keuangan bersama.</p>
+        <label class="auth-label">Email
+          <input type="email" id="authEmail" autocomplete="email" required />
+        </label>
+        <label class="auth-label">Kata Sandi
+          <input type="password" id="authPassword" autocomplete="current-password" required />
+        </label>
+        <p class="auth-error" id="authError" hidden></p>
+        <button type="submit" class="btn btn-primary" id="authSubmit">Masuk</button>
+        <p class="auth-toggle" id="authToggleWrap">Belum punya akun?
+          <button type="button" id="authToggle" class="linklike">Daftar</button>
+        </p>
+      </form>
+      <div id="authNotConfigured" class="auth-form" hidden>
+        <p class="auth-sub">Penyimpanan cloud belum dikonfigurasi. Isi kredensial di
+          <code>supabase-config.js</code> dan jalankan <code>supabase-setup.sql</code>.</p>
+      </div>
+    </div>
+  </div>
 
   <main class="container">
     <!-- ==================== CASH FLOW VIEW ==================== -->
@@ -522,6 +559,9 @@
     <span>Data tersimpan otomatis di browser ini (localStorage).</span>
   </footer>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="supabase-config.js"></script>
+  <script src="cloud.js"></script>
   <script src="charts.js"></script>
   <script src="app.js"></script>
 </body>

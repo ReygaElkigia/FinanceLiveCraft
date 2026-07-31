@@ -128,6 +128,7 @@
     return DEFAULT_SHARES.map(function (s) { return { name: s.name, pct: s.pct }; });
   }
   function persistShares() {
+    if (useCloud) { window.Cloud.saveDoc("profitshares", PROFIT_SHARES).catch(cloudError); return; }
     try { localStorage.setItem(SHARES_KEY, JSON.stringify(PROFIT_SHARES)); }
     catch (e) { alert("Gagal menyimpan pembagian laba."); }
   }
@@ -250,8 +251,30 @@
     sharesAdd: document.getElementById("sharesAdd"),
     sharesSave: document.getElementById("sharesSave"),
     sharesCancel: document.getElementById("sharesCancel"),
-    sharesResetDefault: document.getElementById("sharesResetDefault")
+    sharesResetDefault: document.getElementById("sharesResetDefault"),
+    // Auth / cloud
+    userBox: document.getElementById("userBox"),
+    userEmail: document.getElementById("userEmail"),
+    logoutBtn: document.getElementById("logoutBtn"),
+    authGate: document.getElementById("authGate"),
+    authLoading: document.getElementById("authLoading"),
+    authForm: document.getElementById("authForm"),
+    authTitle: document.getElementById("authTitle"),
+    authSub: document.getElementById("authSub"),
+    authEmail: document.getElementById("authEmail"),
+    authPassword: document.getElementById("authPassword"),
+    authError: document.getElementById("authError"),
+    authSubmit: document.getElementById("authSubmit"),
+    authToggle: document.getElementById("authToggle"),
+    authToggleWrap: document.getElementById("authToggleWrap"),
+    authNotConfigured: document.getElementById("authNotConfigured")
   };
+
+  var useCloud = !!(window.Cloud && window.Cloud.isConfigured());
+  function cloudError(e) {
+    console.error(e);
+    alert("Gagal menyimpan ke cloud: " + (e && e.message ? e.message : e));
+  }
 
   var INVEST_CODE = "SHM"; // kode investasi di Cash Flow
 
@@ -297,6 +320,7 @@
   }
 
   function save() {
+    if (useCloud) { window.Cloud.saveDoc("transactions", transactions).catch(cloudError); return; }
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(transactions));
     } catch (e) {
@@ -318,6 +342,7 @@
   }
 
   function saveAssets() {
+    if (useCloud) { window.Cloud.saveDoc("assets", assets).catch(cloudError); return; }
     try {
       localStorage.setItem(ASSET_KEY, JSON.stringify(assets));
     } catch (e) {
@@ -575,6 +600,7 @@
     } catch (e) { return null; }
   }
   function saveEmergency(v) {
+    if (useCloud) { window.Cloud.saveDoc("emergency", v).catch(cloudError); return; }
     try { localStorage.setItem(EMERGENCY_KEY, JSON.stringify(v)); }
     catch (e) { alert("Gagal menyimpan dana darurat."); }
   }
@@ -1755,7 +1781,8 @@
   el.emgReset.addEventListener("click", function () {
     if (!confirm("Hapus pengaturan dana darurat?")) return;
     emergency = null;
-    try { localStorage.removeItem(EMERGENCY_KEY); } catch (e) {}
+    if (useCloud) { window.Cloud.saveDoc("emergency", null).catch(cloudError); }
+    else { try { localStorage.removeItem(EMERGENCY_KEY); } catch (e) {} }
     closeEmergencyForm();
     renderEmergency();
   });
@@ -1832,12 +1859,126 @@
     resizeTimer = setTimeout(function () { renderChartsFor(currentView); }, 180);
   });
 
+  // ================= AUTH / CLOUD INIT =================
+  var signupMode = false;
+
+  function renderInitial() {
+    render();
+    populateYears();
+    if (window.Charts) renderCashflowCharts();
+  }
+
+  function showGate(mode) {
+    // mode: "loading" | "login" | "notconfigured" | "none"
+    el.authGate.hidden = (mode === "none");
+    el.authLoading.hidden = (mode !== "loading");
+    el.authForm.hidden = (mode !== "login");
+    el.authNotConfigured.hidden = (mode !== "notconfigured");
+  }
+
+  function applyCloudDoc(key, data) {
+    if (key === "transactions") transactions = Array.isArray(data) ? data : [];
+    else if (key === "assets") assets = Array.isArray(data) ? data : [];
+    else if (key === "emergency") emergency = data || null;
+    else if (key === "profitshares") PROFIT_SHARES = (Array.isArray(data) && data.length) ? data : PROFIT_SHARES;
+  }
+
+  function enterApp(session) {
+    el.userEmail.textContent = (session && session.user && session.user.email) || "";
+    el.userBox.hidden = false;
+    showGate("loading");
+    window.Cloud.loadAll().then(function (d) {
+      applyCloudDoc("transactions", d.transactions);
+      applyCloudDoc("assets", d.assets);
+      applyCloudDoc("emergency", d.emergency);
+      applyCloudDoc("profitshares", d.profitshares);
+      showGate("none");
+      resetForm();
+      resetAssetForm();
+      renderInitial();
+      window.Cloud.subscribe(function (key, data) {
+        applyCloudDoc(key, data);
+        render();
+        if (currentView === "cashflow") { if (window.Charts) renderCashflowCharts(); }
+        else renderChartsFor(currentView);
+      });
+    }).catch(function (e) {
+      showGate("login");
+      showAuthError("Gagal memuat data: " + (e && e.message ? e.message : e));
+    });
+  }
+
+  function showAuthError(msg) {
+    el.authError.textContent = msg;
+    el.authError.hidden = !msg;
+  }
+
+  function setAuthMode(signup) {
+    signupMode = signup;
+    el.authTitle.textContent = signup ? "Daftar" : "Masuk";
+    el.authSubmit.textContent = signup ? "Daftar" : "Masuk";
+    el.authSub.textContent = signup
+      ? "Buat akun untuk mengakses data keuangan bersama."
+      : "Masuk untuk mengakses data keuangan bersama.";
+    el.authToggle.textContent = signup ? "Masuk" : "Daftar";
+    el.authToggleWrap.childNodes[0].nodeValue = signup ? "Sudah punya akun? " : "Belum punya akun? ";
+    el.authPassword.setAttribute("autocomplete", signup ? "new-password" : "current-password");
+    showAuthError("");
+  }
+
+  function initCloud() {
+    setAuthMode(false);
+    el.authToggle.addEventListener("click", function () { setAuthMode(!signupMode); });
+    el.logoutBtn.addEventListener("click", function () {
+      window.Cloud.signOut().then(function () {
+        transactions = []; assets = []; emergency = null;
+        el.userBox.hidden = true;
+        el.authEmail.value = ""; el.authPassword.value = "";
+        setAuthMode(false);
+        showGate("login");
+      });
+    });
+    el.authForm.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var email = el.authEmail.value.trim();
+      var pass = el.authPassword.value;
+      if (!email || !pass) return;
+      showAuthError("");
+      el.authSubmit.disabled = true;
+      var op = signupMode ? window.Cloud.signUp(email, pass) : window.Cloud.signIn(email, pass);
+      op.then(function (data) {
+        el.authSubmit.disabled = false;
+        if (data && data.session) {
+          enterApp(data.session);
+        } else {
+          // signUp tanpa sesi = perlu konfirmasi email
+          setAuthMode(false);
+          showAuthError("Akun dibuat. Cek email untuk konfirmasi, lalu masuk.");
+        }
+      }).catch(function (err) {
+        el.authSubmit.disabled = false;
+        showAuthError(err && err.message ? err.message : "Gagal masuk.");
+      });
+    });
+
+    window.Cloud.getSession().then(function (session) {
+      if (session) enterApp(session);
+      else showGate("login");
+    }).catch(function () { showGate("login"); });
+  }
+
   // ---- Init ----
   populateCodes();
-  resetForm();
-  render();
-  populateYears();
   populateAssetSelectors();
+  resetForm();
   resetAssetForm();
-  if (window.Charts) renderCashflowCharts();
+
+  if (useCloud) {
+    initCloud();
+  } else {
+    if (window.Cloud) {
+      // SDK ada tapi belum dikonfigurasi → jalan lokal (gerbang tetap tersembunyi)
+    }
+    renderInitial();
+  }
 })();
