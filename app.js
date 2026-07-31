@@ -115,6 +115,11 @@
 
   var MONTHS_SHORT = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Ags","Sep","Okt","Nov","Des"];
 
+  // Colgroup dengan lebar tetap agar kolom bulan tidak bergeser saat ada nilai.
+  var MATRIX_COLGROUP = "<colgroup><col class='ec-cat'/>" +
+    new Array(12).fill("<col class='ec-month'/>").join("") +
+    "<col class='ec-total'/></colgroup>";
+
   // ---- State ----
   var transactions = load();
   var assets = loadAssets();
@@ -653,6 +658,7 @@
   // Pembangun tabel matrix generik (dipakai Expense Log & Sales Log).
   function buildMatrixTable(groups, matrix, monthTotals, opts) {
     var html = '<table class="expense-table ' + (opts.tableClass || "") + '">';
+    html += MATRIX_COLGROUP;
 
     html += "<thead><tr>";
     html += '<th class="exp-cat">' + escapeHtml(opts.catLabel) + "</th>";
@@ -1283,6 +1289,7 @@
   // Satu tabel ringkasan: baris berlabel, kolom bulan + total.
   function buildSummaryTable(headerClass, title, rows) {
     var html = '<table class="expense-table summary-table">';
+    html += MATRIX_COLGROUP;
     html += '<thead><tr class="' + headerClass + '">';
     html += '<th class="exp-cat">' + escapeHtml(title) + "</th>";
     MONTHS_SHORT.forEach(function (m) { html += '<th class="col-num">' + m + "</th>"; });

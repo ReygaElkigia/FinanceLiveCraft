@@ -589,32 +589,44 @@ tfoot td {
 .expense-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.85rem;
-  min-width: 900px;
+  font-size: 0.82rem;
+  table-layout: fixed;
+  min-width: 1700px;
 }
+/* Fixed column widths keep month columns aligned regardless of content */
+.expense-table col.ec-cat { width: 220px; }
+.expense-table col.ec-month { width: 114px; }
+.expense-table col.ec-total { width: 118px; }
 .expense-table thead th {
   background: linear-gradient(180deg, var(--green-700), var(--green-800));
   color: #fff;
-  padding: 0.7rem 0.75rem;
+  padding: 0.7rem 0.6rem;
   white-space: nowrap;
   text-align: right;
   font-weight: 600;
-  font-size: 0.78rem;
+  font-size: 0.76rem;
   position: sticky;
   top: 0;
+  border-left: 1px solid rgba(255, 255, 255, 0.10);
 }
-.expense-table thead th.exp-cat { text-align: left; }
+.expense-table thead th.exp-cat { text-align: left; border-left: none; }
 .expense-table td {
-  padding: 0.55rem 0.75rem;
+  padding: 0.55rem 0.5rem;
   border-bottom: 1px solid var(--line);
+  border-left: 1px solid var(--line);
   white-space: nowrap;
+  overflow: hidden;
 }
+.expense-table .col-num { font-size: 0.76rem; }
 .expense-table .exp-cat {
   text-align: left;
   position: sticky;
   left: 0;
   background: var(--card-bg);
   z-index: 1;
+  border-left: none;
+  box-shadow: 1px 0 0 var(--line);
+  text-overflow: ellipsis;
 }
 .expense-table tbody tr:hover .exp-cat { background: var(--green-50); }
 .expense-table .col-num {
