@@ -411,6 +411,14 @@ input:focus, select:focus, .search:focus {
   box-shadow: 0 4px 12px rgba(20, 120, 90, 0.28);
 }
 .btn-primary:hover { filter: brightness(1.06); box-shadow: 0 6px 18px rgba(20, 120, 90, 0.35); }
+.btn-outline {
+  background: var(--card-bg);
+  border-color: var(--line);
+  color: var(--ink);
+}
+.btn-outline:hover { background: var(--bg); border-color: var(--green-600); color: var(--green-700); }
+.btn-outline.is-active-toggle { background: var(--green-50); border-color: var(--green-600); color: var(--green-700); }
+.btn-sm { padding: 0.45rem 0.85rem; font-size: 0.82rem; }
 .btn-ghost {
   background: transparent;
   border-color: rgba(255,255,255,0.5);
@@ -687,6 +695,47 @@ tfoot td {
   .summary-table .sum-head-profit th { background: #1f8a4a; color: #fff; }
 }
 .sum-panel { margin-bottom: 1.25rem; }
+
+/* Editor pembagian laba */
+.shares-editor { border-left: 4px solid var(--green-600); }
+.shares-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+.shares-head .chart-title { margin: 0; }
+.shares-total {
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 0.25rem 0.7rem;
+  border-radius: 999px;
+  font-variant-numeric: tabular-nums;
+}
+.shares-total.shares-ok { background: rgba(18, 160, 101, 0.14); color: var(--in); }
+.shares-total.shares-bad { background: rgba(224, 82, 79, 0.14); color: var(--out); }
+.shares-rows { display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 0.9rem; }
+.shares-row { display: flex; align-items: center; gap: 0.6rem; }
+.share-name { flex: 1; min-width: 0; }
+.share-pct-wrap { position: relative; width: 110px; flex: none; }
+.share-pct { width: 100%; padding-right: 1.6rem; text-align: right; }
+.share-pct-sign {
+  position: absolute;
+  right: 0.7rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 0.85rem;
+  pointer-events: none;
+}
+.shares-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem; }
+/* hide number spinners for a cleaner look */
+.share-pct::-webkit-outer-spin-button,
+.share-pct::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.share-pct { -moz-appearance: textfield; appearance: textfield; }
 
 /* ---------- Charts / Dashboard ---------- */
 .dashboard {

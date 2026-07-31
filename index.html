@@ -447,7 +447,23 @@
         <div class="expense-controls">
           <label class="inline-label" for="summaryYear">Tahun</label>
           <select id="summaryYear" class="select-plain" aria-label="Pilih tahun"></select>
+          <button id="profitSharesBtn" class="btn btn-outline" type="button">Atur Pembagian</button>
           <button id="exportSummaryBtn" class="btn btn-primary" type="button">Export CSV</button>
+        </div>
+      </section>
+
+      <!-- Editor pembagian laba -->
+      <section class="panel shares-editor" id="sharesEditor" hidden>
+        <div class="shares-head">
+          <h3 class="chart-title">Atur Pembagian Laba Bersih</h3>
+          <span class="shares-total" id="sharesTotal">Total: 100%</span>
+        </div>
+        <div id="sharesRows" class="shares-rows"></div>
+        <button type="button" class="btn btn-outline btn-sm" id="sharesAdd">+ Tambah Orang</button>
+        <div class="shares-actions">
+          <button type="button" class="btn btn-primary" id="sharesSave">Simpan</button>
+          <button type="button" class="btn btn-outline" id="sharesCancel">Batal</button>
+          <button type="button" class="btn btn-outline" id="sharesResetDefault">Reset Default</button>
         </div>
       </section>
 

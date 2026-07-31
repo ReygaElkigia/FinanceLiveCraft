@@ -60,9 +60,11 @@ Aplikasi punya enam menu: **Cash Flow**, **Expense Log**, **Aset**,
   - **Sales Log (Laba kotor)** — pendapatan
   - **Expense Log (Beban)** — pengeluaran
   - **Profit Log (Laba bersih)** — Pendapatan − Beban
-  - **Profit Log Person** — pembagian laba bersih: Wiliam 20%, Reyga 20%,
-    Kevin 20%, Investment 30%, Ads 10% (bisa diubah di `PROFIT_SHARES`
-    dalam `app.js`).
+  - **Profit Log Person** — pembagian laba bersih. Porsi & nama bisa
+    **diubah langsung dari UI** (tombol **Atur Pembagian**): tambah/hapus
+    orang, ubah persen (indikator total 100% live), simpan — tersimpan di
+    localStorage dan tabel + donut ikut menyesuaikan. Default: Wiliam 20%,
+    Reyga 20%, Kevin 20%, Investment 30%, Ads 10%.
 - Kartu ringkasan tahunan (Total Pendapatan, Total Beban, Laba Bersih),
   selektor tahun, dan Export CSV.
 

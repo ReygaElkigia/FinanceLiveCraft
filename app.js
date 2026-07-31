@@ -7,6 +7,7 @@
   var STORAGE_KEY = "financelivecraft.transactions.v1";
   var ASSET_KEY = "financelivecraft.assets.v1";
   var EMERGENCY_KEY = "financelivecraft.emergency.v1";
+  var SHARES_KEY = "financelivecraft.profitshares.v1";
 
   var MONTHS_FULL = ["Januari","Februari","Maret","April","Mei","Juni","Juli",
     "Agustus","September","Oktober","November","Desember"];
@@ -104,14 +105,29 @@
   var EXPENSE_CODES = flattenCodes(EXPENSE_GROUPS);
   var SALES_CODES = flattenCodes(SALES_GROUPS);
 
-  // Pembagian laba bersih (Profit Log Person) — total harus 100%.
-  var PROFIT_SHARES = [
+  // Pembagian laba bersih (Profit Log Person) — bisa diubah pengguna.
+  var DEFAULT_SHARES = [
     { name: "Wiliam",     pct: 0.20 },
     { name: "Reyga",      pct: 0.20 },
     { name: "Kevin",      pct: 0.20 },
     { name: "Investment", pct: 0.30 },
     { name: "Ads",        pct: 0.10 }
   ];
+  function loadShares() {
+    try {
+      var raw = localStorage.getItem(SHARES_KEY);
+      if (raw) {
+        var p = JSON.parse(raw);
+        if (Array.isArray(p) && p.length) return p;
+      }
+    } catch (e) {}
+    return DEFAULT_SHARES.map(function (s) { return { name: s.name, pct: s.pct }; });
+  }
+  function persistShares() {
+    try { localStorage.setItem(SHARES_KEY, JSON.stringify(PROFIT_SHARES)); }
+    catch (e) { alert("Gagal menyimpan pembagian laba."); }
+  }
+  var PROFIT_SHARES = loadShares();
 
   var MONTHS_SHORT = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Ags","Sep","Okt","Nov","Des"];
 
@@ -213,7 +229,16 @@
     summaryWrap: document.getElementById("summaryWrap"),
     summaryCards: document.getElementById("summaryCards"),
     summaryEmpty: document.getElementById("summaryEmpty"),
-    exportSummaryBtn: document.getElementById("exportSummaryBtn")
+    exportSummaryBtn: document.getElementById("exportSummaryBtn"),
+    // Pembagian laba
+    profitSharesBtn: document.getElementById("profitSharesBtn"),
+    sharesEditor: document.getElementById("sharesEditor"),
+    sharesRows: document.getElementById("sharesRows"),
+    sharesTotal: document.getElementById("sharesTotal"),
+    sharesAdd: document.getElementById("sharesAdd"),
+    sharesSave: document.getElementById("sharesSave"),
+    sharesCancel: document.getElementById("sharesCancel"),
+    sharesResetDefault: document.getElementById("sharesResetDefault")
   };
 
   var INVEST_CODE = "SHM"; // kode investasi di Cash Flow
@@ -1389,6 +1414,81 @@
     URL.revokeObjectURL(url);
   }
 
+  // ---- Editor pembagian laba ----
+  function shareRow(name, pctNum) {
+    var row = document.createElement("div");
+    row.className = "shares-row";
+
+    var ni = document.createElement("input");
+    ni.type = "text"; ni.className = "share-name"; ni.value = name || ""; ni.placeholder = "Nama";
+
+    var wrap = document.createElement("div");
+    wrap.className = "share-pct-wrap";
+    var pi = document.createElement("input");
+    pi.type = "number"; pi.className = "share-pct"; pi.min = "0"; pi.max = "100"; pi.step = "0.1";
+    pi.value = (pctNum != null ? pctNum : "");
+    pi.addEventListener("input", updateSharesTotal);
+    var sign = document.createElement("span");
+    sign.className = "share-pct-sign"; sign.textContent = "%";
+    wrap.appendChild(pi); wrap.appendChild(sign);
+
+    var rm = document.createElement("button");
+    rm.type = "button"; rm.className = "icon-btn del"; rm.title = "Hapus";
+    rm.setAttribute("aria-label", "Hapus baris");
+    rm.innerHTML = '<span aria-hidden="true">🗑</span>';
+    rm.addEventListener("click", function () { row.remove(); updateSharesTotal(); });
+
+    row.appendChild(ni); row.appendChild(wrap); row.appendChild(rm);
+    return row;
+  }
+
+  function renderSharesRows(list) {
+    el.sharesRows.innerHTML = "";
+    list.forEach(function (s) {
+      el.sharesRows.appendChild(shareRow(s.name, Math.round(s.pct * 1000) / 10));
+    });
+    updateSharesTotal();
+  }
+
+  function updateSharesTotal() {
+    var total = 0;
+    el.sharesRows.querySelectorAll(".share-pct").forEach(function (i) {
+      total += parseFloat(i.value) || 0;
+    });
+    var rounded = Math.round(total * 10) / 10;
+    var ok = Math.abs(rounded - 100) < 0.05;
+    el.sharesTotal.textContent = "Total: " + rounded + "%" + (ok ? "" : " (harus 100%)");
+    el.sharesTotal.classList.toggle("shares-ok", ok);
+    el.sharesTotal.classList.toggle("shares-bad", !ok);
+  }
+
+  function openSharesEditor() {
+    renderSharesRows(PROFIT_SHARES);
+    el.sharesEditor.hidden = false;
+    el.profitSharesBtn.classList.add("is-active-toggle");
+  }
+  function closeSharesEditor() {
+    el.sharesEditor.hidden = true;
+    el.profitSharesBtn.classList.remove("is-active-toggle");
+  }
+  function commitShares() {
+    var list = [];
+    el.sharesRows.querySelectorAll(".shares-row").forEach(function (r) {
+      var name = r.querySelector(".share-name").value.trim();
+      var pct = parseFloat(r.querySelector(".share-pct").value) || 0;
+      if (name) list.push({ name: name, pct: pct / 100 });
+    });
+    if (!list.length) { alert("Tambahkan minimal satu orang."); return; }
+    var total = list.reduce(function (a, b) { return a + b.pct; }, 0);
+    if (Math.abs(total - 1) > 0.0005) {
+      if (!confirm("Total persentase " + (Math.round(total * 1000) / 10) + "%, bukan 100%. Tetap simpan?")) return;
+    }
+    PROFIT_SHARES = list;
+    persistShares();
+    closeSharesEditor();
+    renderSummary();
+  }
+
   // ================= CHARTS =================
   var PALETTE = ["--ser-1", "--ser-2", "--ser-3", "--ser-4", "--ser-5", "--ser-6"];
   function $(id) { return document.getElementById(id); }
@@ -1673,6 +1773,18 @@
   // Summary events
   el.summaryYear.addEventListener("change", renderSummary);
   el.exportSummaryBtn.addEventListener("click", exportSummaryCSV);
+  el.profitSharesBtn.addEventListener("click", function () {
+    if (el.sharesEditor.hidden) openSharesEditor(); else closeSharesEditor();
+  });
+  el.sharesAdd.addEventListener("click", function () {
+    el.sharesRows.appendChild(shareRow("", ""));
+    updateSharesTotal();
+  });
+  el.sharesSave.addEventListener("click", commitShares);
+  el.sharesCancel.addEventListener("click", closeSharesEditor);
+  el.sharesResetDefault.addEventListener("click", function () {
+    renderSharesRows(DEFAULT_SHARES);
+  });
 
   // Re-render the active view's charts on resize (debounced) so SVG widths
   // track the container.
