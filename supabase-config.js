@@ -9,5 +9,5 @@
  * beralih ke penyimpanan cloud + memerlukan login. Selama masih berisi
  * "YOUR_...", aplikasi tetap memakai penyimpanan lokal (localStorage).
  */
-window.SUPABASE_URL = "YOUR_SUPABASE_URL";
-window.SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+window.SUPABASE_URL = "https://qftbvxoiaoxkjacphauw.supabase.co";
+window.SUPABASE_ANON_KEY = "sb_publishable_c5vxIfN_ce6r6vsRFMckLg_kFmUtQvY";
