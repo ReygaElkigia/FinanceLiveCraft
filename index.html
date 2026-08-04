@@ -390,7 +390,25 @@
         <select id="assetFilterPembayaran" class="select-plain" aria-label="Filter pembayaran">
           <option value="">Semua Pembayaran</option>
         </select>
+        <button id="assetImportBtn" class="btn btn-outline" type="button">Import</button>
         <button id="exportAssetBtn" class="btn btn-primary" type="button">Export CSV</button>
+      </section>
+
+      <!-- Import aset (tempel dari spreadsheet) -->
+      <section class="panel asset-import" id="assetImport" hidden>
+        <div class="shares-head">
+          <h3 class="chart-title">Import Aset</h3>
+          <span class="import-info" id="assetImportInfo"></span>
+        </div>
+        <p class="opening-note">Salin baris dari spreadsheet (Excel/Google Sheets) lalu tempel di bawah.
+          Kolom berurutan &amp; dipisah TAB: <strong>Nama · Harga Satuan · Qty · Total · Pembayaran · Bulan</strong>.
+          Harga/Total/Bulan boleh kosong.</p>
+        <textarea id="assetImportText" class="import-textarea" rows="8"
+          placeholder="Komputer Wiliam&#9;Rp5.656.000&#9;1&#9;Rp5.656.000&#9;Hutang&#9;Agustus"></textarea>
+        <div class="shares-actions">
+          <button type="button" class="btn btn-primary" id="assetImportRun">Import</button>
+          <button type="button" class="btn btn-outline" id="assetImportCancel">Batal</button>
+        </div>
       </section>
 
       <!-- Table -->

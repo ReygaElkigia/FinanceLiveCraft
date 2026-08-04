@@ -239,6 +239,12 @@
     assetFilterBulan: document.getElementById("assetFilterBulan"),
     assetFilterPembayaran: document.getElementById("assetFilterPembayaran"),
     exportAssetBtn: document.getElementById("exportAssetBtn"),
+    assetImportBtn: document.getElementById("assetImportBtn"),
+    assetImport: document.getElementById("assetImport"),
+    assetImportText: document.getElementById("assetImportText"),
+    assetImportRun: document.getElementById("assetImportRun"),
+    assetImportCancel: document.getElementById("assetImportCancel"),
+    assetImportInfo: document.getElementById("assetImportInfo"),
     assetTotal: document.getElementById("assetTotal"),
     assetCount: document.getElementById("assetCount"),
     assetDebt: document.getElementById("assetDebt"),
@@ -1104,6 +1110,58 @@
     renderAssets();
   }
 
+  // ---- Import aset (tempel TSV dari spreadsheet) ----
+  function normalizeBulan(s) {
+    s = (s || "").trim();
+    if (!s) return "";
+    var low = s.toLowerCase();
+    for (var i = 0; i < MONTHS_FULL.length; i++) {
+      if (low.indexOf(MONTHS_FULL[i].toLowerCase()) === 0) return MONTHS_FULL[i];
+    }
+    return s;
+  }
+  function parseAssetsPaste(text) {
+    var out = [];
+    text.split(/\r?\n/).forEach(function (line) {
+      if (!line.trim()) return;
+      var c = line.split("\t");
+      var nama = (c[0] || "").trim();
+      if (!nama) return;
+      var harga = parseMoney(c[1] || "");
+      var qty = parseInt(String(c[2] || "").replace(/[^\d]/g, ""), 10) || 1;
+      var total = parseMoney(c[3] || "");
+      if (!total) total = harga * qty;
+      var pembayaran = (c[4] || "").trim() || "Hutang";
+      var bulan = normalizeBulan(c[5] || "");
+      out.push({ id: uid(), nama: nama, harga: harga, qty: qty, total: total, pembayaran: pembayaran, bulan: bulan });
+    });
+    return out;
+  }
+  function openAssetImport() {
+    el.assetImport.hidden = false;
+    el.assetImportBtn.classList.add("is-active-toggle");
+    el.assetImportInfo.textContent = "";
+    el.assetImportText.focus();
+  }
+  function closeAssetImport() {
+    el.assetImport.hidden = true;
+    el.assetImportBtn.classList.remove("is-active-toggle");
+  }
+  function runAssetImport() {
+    var parsed = parseAssetsPaste(el.assetImportText.value);
+    if (!parsed.length) {
+      alert("Tidak ada data terbaca. Pastikan disalin dari spreadsheet (kolom dipisah TAB).");
+      return;
+    }
+    var totalNilai = parsed.reduce(function (a, b) { return a + assetTotalOf(b); }, 0);
+    if (!confirm("Tambahkan " + parsed.length + " aset (total " + formatRupiah(totalNilai) + ")?")) return;
+    assets = assets.concat(parsed);
+    saveAssets();
+    renderAssets();
+    el.assetImportInfo.textContent = parsed.length + " aset ditambahkan (" + formatRupiah(totalNilai) + ").";
+    el.assetImportText.value = "";
+  }
+
   function exportAssetCSV() {
     var rows = getFilteredAssets();
     if (!rows.length) { alert("Tidak ada aset untuk diekspor."); return; }
@@ -1892,6 +1950,11 @@
   el.assetFilterBulan.addEventListener("change", renderAssets);
   el.assetFilterPembayaran.addEventListener("change", renderAssets);
   el.exportAssetBtn.addEventListener("click", exportAssetCSV);
+  el.assetImportBtn.addEventListener("click", function () {
+    if (el.assetImport.hidden) openAssetImport(); else closeAssetImport();
+  });
+  el.assetImportRun.addEventListener("click", runAssetImport);
+  el.assetImportCancel.addEventListener("click", closeAssetImport);
   el.assetHarga.addEventListener("input", computeFormTotal);
   el.assetQty.addEventListener("input", computeFormTotal);
   attachMoneyFormat(el.assetHarga);
