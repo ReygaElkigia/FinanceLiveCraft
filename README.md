@@ -109,39 +109,46 @@ Secara default aplikasi menyimpan data di browser (localStorage). Untuk
    centang *Auto Confirm User*). Ulangi untuk tiap orang yang boleh akses.
    Untuk menutup pendaftaran mandiri: **Authentication → Providers → Email**,
    matikan *Enable Signups*.
-5. **Host web-nya** (mis. GitHub Pages / Netlify / Vercel) lalu bagikan
-   alamatnya. Setelah dikonfigurasi, aplikasi menampilkan **layar login** dan
-   semua yang masuk melihat **data yang sama**, sinkron otomatis (realtime).
+5. **Set Site URL Supabase**: **Authentication → URL Configuration → Site URL**
+   isi dengan domain Anda (mis. `https://financelivecraft.id`).
+6. **Host web-nya** (lihat bagian Hostinger di bawah) lalu bagikan alamatnya.
+   Setelah dikonfigurasi, aplikasi menampilkan **layar login** dan semua yang
+   masuk melihat **data yang sama**, sinkron otomatis (realtime).
 
 > Catatan: semua pengguna yang login berbagi satu workspace. Penyimpanan
 > memakai model *last-write-wins* per dataset — cocok untuk tim kecil yang
 > saling percaya. Selama `supabase-config.js` masih berisi `YOUR_...`,
 > aplikasi tetap berjalan dengan penyimpanan lokal seperti biasa.
 
-## Hosting (GitHub Pages)
+## Hosting (Hostinger)
 
-Repo ini sudah menyertakan workflow **`.github/workflows/deploy-pages.yml`**
-yang otomatis mendeploy situs ke GitHub Pages setiap kali ada push.
+Situs ini statis (HTML/CSS/JS) — cukup diletakkan di folder `public_html`.
+File yang **wajib** diunggah: `index.html`, `styles.css`, `app.js`,
+`charts.js`, `cloud.js`, `supabase-config.js`. (README & `.sql` opsional,
+tidak dipakai saat berjalan.)
 
-Cara mengaktifkan (sekali saja):
+**Cara A — File Manager (paling mudah):**
 
-1. Di GitHub, buka **Settings → Pages**.
-2. Bagian **Build and deployment → Source**, pilih **GitHub Actions**.
-3. Push ke branch (atau jalankan manual: tab **Actions → Deploy to GitHub
-   Pages → Run workflow**). Setelah selesai, alamat situs muncul di
-   **Settings → Pages** (mis. `https://<user>.github.io/financelivecraft/`).
-4. Bagikan alamat itu ke tim Anda.
+1. Isi dulu `supabase-config.js` dengan kredensial Supabase Anda.
+2. hPanel → **File → File Manager → Buka**.
+3. Masuk ke folder **`public_html`**. Hapus file bawaan (mis. `default.php`
+   / `index.html` contoh) bila ada.
+4. Klik **Upload**, pilih ke-6 file di atas. Pastikan `index.html` berada
+   **langsung di dalam `public_html`** (bukan di subfolder).
+5. Buka domain Anda (mis. `https://financelivecraft.id`) — layar login muncul.
 
-> Jika deploy diblokir karena proteksi branch pada environment, buka
-> **Settings → Environments → github-pages** dan izinkan branch yang dipakai.
->
-> **Alternatif tanpa workflow**: Settings → Pages → Source **Deploy from a
-> branch** → pilih branch + folder `/ (root)`.
+> Untuk memperbarui web nanti, cukup unggah ulang file yang berubah lalu
+> **Hapus cache** di hPanel (Dashboard → Fitur dasar → Cache).
 
-**Tentang kunci Supabase di repo publik:** `anon key` memang dirancang untuk
-dipakai di sisi klien (publik) — keamanan dijaga oleh Row Level Security +
-login, jadi aman berada di `supabase-config.js`. Jangan pernah menaruh
-*service_role key* di sini.
+**Cara B — Git (auto-deploy):** hPanel → **Tingkat lanjut → GIT** → tambahkan
+repository (URL repo, branch, install path `public_html`) → **Deploy**. Ulangi
+**Deploy** setiap ada perubahan.
+
+**Penting:**
+- Pastikan **SSL aktif** (hPanel → Keamanan → SSL) — Supabase/login butuh
+  `https`. Domain baru bisa perlu waktu sampai SSL & DNS selesai.
+- `anon key` Supabase memang untuk sisi klien (publik) — keamanan dijaga
+  Row Level Security + login. **Jangan** menaruh *service_role key* di sini.
 
 ## Cara Menjalankan
 
