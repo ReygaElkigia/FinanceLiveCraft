@@ -23,6 +23,8 @@ Aplikasi punya enam menu: **Cash Flow**, **Expense Log**, **Aset**,
   (mengikuti filter yang aktif).
 - **Filter** berdasarkan bulan & kode, serta **pencarian** keterangan.
 - **Edit**, **hapus**, dan **Export CSV**.
+- **Saldo Awal** — tetapkan modal awal per akun (Livecraft & Keranjang).
+  Total Saldo = Saldo Awal + (Cash In − Cash Out).
 - **Dana Darurat** — tetapkan jumlah dana darurat & tanggal mulai; sisanya
   otomatis dikurangi total **Cash Out** sejak tanggal itu, lengkap dengan
   bilah progres (hijau/oranye/merah) dan status bila melebihi dana.

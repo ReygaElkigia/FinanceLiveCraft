@@ -8,6 +8,7 @@
   var ASSET_KEY = "financelivecraft.assets.v1";
   var EMERGENCY_KEY = "financelivecraft.emergency.v1";
   var SHARES_KEY = "financelivecraft.profitshares.v1";
+  var OPENING_KEY = "financelivecraft.opening.v1";
 
   var MONTHS_FULL = ["Januari","Februari","Maret","April","Mei","Juni","Juli",
     "Agustus","September","Oktober","November","Desember"];
@@ -134,6 +135,24 @@
   }
   var PROFIT_SHARES = loadShares();
 
+  // Saldo awal (modal awal) per akun.
+  function normalizeOpening(d) {
+    d = d || {};
+    return { Livecraft: Number(d.Livecraft) || 0, Keranjang: Number(d.Keranjang) || 0 };
+  }
+  function loadOpening() {
+    try {
+      var raw = localStorage.getItem(OPENING_KEY);
+      return normalizeOpening(raw ? JSON.parse(raw) : null);
+    } catch (e) { return normalizeOpening(null); }
+  }
+  function saveOpening() {
+    if (useCloud) { window.Cloud.saveDoc("opening", openingBalance).catch(cloudError); return; }
+    try { localStorage.setItem(OPENING_KEY, JSON.stringify(openingBalance)); }
+    catch (e) { alert("Gagal menyimpan saldo awal."); }
+  }
+  var openingBalance = loadOpening();
+
   var MONTHS_SHORT = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Ags","Sep","Okt","Nov","Des"];
 
   // Colgroup dengan lebar tetap agar kolom bulan tidak bergeser saat ada nilai.
@@ -185,6 +204,13 @@
     emgCancel: document.getElementById("emgCancel"),
     emgReset: document.getElementById("emgReset"),
     emgDisplay: document.getElementById("emgDisplay"),
+    // Saldo Awal
+    openingToggle: document.getElementById("openingToggle"),
+    openingForm: document.getElementById("openingForm"),
+    openingLive: document.getElementById("openingLive"),
+    openingKeranjang: document.getElementById("openingKeranjang"),
+    openingCancel: document.getElementById("openingCancel"),
+    openingNote: document.getElementById("openingNote"),
     // Expense Log
     navTabs: document.querySelectorAll(".nav-tab"),
     viewCashflow: document.getElementById("view-cashflow"),
@@ -499,14 +525,20 @@
     el.balance.textContent = formatRupiah(totalIn - totalOut);
     el.txCount.textContent = String(rows.length);
 
-    // Saldo per akun
+    // Saldo per akun (termasuk saldo awal / modal awal)
+    var openLive = openingBalance.Livecraft || 0;
+    var openKer = openingBalance.Keranjang || 0;
     el.liveIn.textContent = formatRupiah(liveIn);
     el.liveOut.textContent = formatRupiah(liveOut);
-    el.liveSaldo.textContent = formatRupiah(liveIn - liveOut);
+    el.liveSaldo.textContent = formatRupiah(openLive + liveIn - liveOut);
     el.keranjangIn.textContent = formatRupiah(kerIn);
     el.keranjangOut.textContent = formatRupiah(kerOut);
-    el.keranjangSaldo.textContent = formatRupiah(kerIn - kerOut);
+    el.keranjangSaldo.textContent = formatRupiah(openKer + kerIn - kerOut);
 
+    // Total saldo = saldo awal + (total cash in - total cash out)
+    el.balance.textContent = formatRupiah(openLive + openKer + totalIn - totalOut);
+
+    renderOpeningNote();
     renderEmergency();
   }
 
@@ -589,6 +621,28 @@
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  }
+
+  // ================= SALDO AWAL (Opening Balance) =================
+  function renderOpeningNote() {
+    var l = openingBalance.Livecraft || 0, k = openingBalance.Keranjang || 0;
+    if (l || k) {
+      el.openingNote.innerHTML = "Saldo awal — Livecraft <b>" + formatRupiah(l) +
+        "</b> · Keranjang <b>" + formatRupiah(k) + "</b>. Total Saldo = Saldo Awal + (Cash In − Cash Out).";
+    } else {
+      el.openingNote.textContent = "Modal awal sebelum transaksi. Total Saldo = Saldo Awal + (Cash In − Cash Out). Klik Atur untuk mengisi.";
+    }
+  }
+  function openOpeningForm() {
+    el.openingLive.value = openingBalance.Livecraft ? formatRupiah(openingBalance.Livecraft) : "";
+    el.openingKeranjang.value = openingBalance.Keranjang ? formatRupiah(openingBalance.Keranjang) : "";
+    el.openingForm.hidden = false;
+    el.openingToggle.hidden = true;
+    el.openingLive.focus();
+  }
+  function closeOpeningForm() {
+    el.openingForm.hidden = true;
+    el.openingToggle.hidden = false;
   }
 
   // ================= DANA DARURAT (Emergency Fund) =================
@@ -1763,6 +1817,22 @@
   attachMoneyFormat(el.cashOut);
   attachMoneyFormat(el.cashIn);
 
+  // Saldo Awal events
+  el.openingToggle.addEventListener("click", openOpeningForm);
+  el.openingCancel.addEventListener("click", closeOpeningForm);
+  attachMoneyFormat(el.openingLive);
+  attachMoneyFormat(el.openingKeranjang);
+  el.openingForm.addEventListener("submit", function (e) {
+    e.preventDefault();
+    openingBalance = {
+      Livecraft: parseMoney(el.openingLive.value),
+      Keranjang: parseMoney(el.openingKeranjang.value)
+    };
+    saveOpening();
+    closeOpeningForm();
+    render();
+  });
+
   // Dana Darurat events
   el.emgToggle.addEventListener("click", openEmergencyForm);
   el.emgCancel.addEventListener("click", closeEmergencyForm);
@@ -1881,6 +1951,7 @@
     else if (key === "assets") assets = Array.isArray(data) ? data : [];
     else if (key === "emergency") emergency = data || null;
     else if (key === "profitshares") PROFIT_SHARES = (Array.isArray(data) && data.length) ? data : PROFIT_SHARES;
+    else if (key === "opening") openingBalance = normalizeOpening(data);
   }
 
   function enterApp(session) {
@@ -1892,6 +1963,7 @@
       applyCloudDoc("assets", d.assets);
       applyCloudDoc("emergency", d.emergency);
       applyCloudDoc("profitshares", d.profitshares);
+      applyCloudDoc("opening", d.opening);
       showGate("none");
       resetForm();
       resetAssetForm();
@@ -1932,6 +2004,7 @@
     el.logoutBtn.addEventListener("click", function () {
       window.Cloud.signOut().then(function () {
         transactions = []; assets = []; emergency = null;
+        openingBalance = normalizeOpening(null);
         el.userBox.hidden = true;
         el.authEmail.value = ""; el.authPassword.value = "";
         setAuthMode(false);

@@ -120,6 +120,31 @@
         </div>
       </section>
 
+      <!-- Saldo Awal -->
+      <section class="panel opening-panel">
+        <div class="opening-head">
+          <div>
+            <h2 class="panel-title">Saldo Awal</h2>
+            <p class="opening-note" id="openingNote">Modal awal sebelum transaksi. Total Saldo = Saldo Awal + (Cash In − Cash Out).</p>
+          </div>
+          <button id="openingToggle" class="btn btn-outline" type="button">Atur</button>
+        </div>
+        <form id="openingForm" class="opening-form" autocomplete="off" hidden>
+          <div class="field">
+            <label for="openingLive">Saldo Awal Livecraft</label>
+            <input type="text" inputmode="numeric" id="openingLive" class="money-input" placeholder="Rp0" />
+          </div>
+          <div class="field">
+            <label for="openingKeranjang">Saldo Awal Keranjang</label>
+            <input type="text" inputmode="numeric" id="openingKeranjang" class="money-input" placeholder="Rp0" />
+          </div>
+          <div class="field field-actions">
+            <button type="submit" class="btn btn-primary">Simpan</button>
+            <button type="button" class="btn btn-outline" id="openingCancel">Batal</button>
+          </div>
+        </form>
+      </section>
+
       <!-- Dana Darurat -->
       <section class="panel emergency-panel">
         <div class="emg-head">
