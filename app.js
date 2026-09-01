@@ -24,6 +24,7 @@
     { code: "GA",   label: "Gaji Admin & Co Host" },
     { code: "GCC",  label: "Gaji Content Creator" },
     { code: "GH",   label: "Gaji / Honor" },
+    { code: "GO",   label: "Gaji Owner" },
     { code: "HTB",  label: "Hutang Bank / Pinjaman" },
     { code: "INC",  label: "Income / Pemasukan" },
     { code: "INT",  label: "Internet" },
@@ -50,6 +51,7 @@
         { code: "GA",  label: "Gaji Admin & Co Host" },
         { code: "GCC", label: "Gaji Content Creator" },
         { code: "GH",  label: "Gaji / Honor Live Streamer" },
+        { code: "GO",  label: "Gaji Owner" },
         { code: "SHM", label: "Investasi" }
       ]
     },
