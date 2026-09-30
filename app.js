@@ -1548,10 +1548,8 @@
   ];
 
   // Kode yang tidak ditampilkan & tidak dihitung di Summary. Ads sudah
-  // dianggarkan lewat Est hitungan (Ads % dari Laba bersih).
+  // dianggarkan lewat Est hitungan (Ads % dari Laba kotor).
   var SHEET_HIDDEN = ["ADS"];
-  // Kode beban yang masuk Total Rugi (tanpa GO & kode tersembunyi).
-  var SHEET_RUGI_CODES = EXPENSE_CODES.filter(function (c) { return SHEET_HIDDEN.indexOf(c) === -1; });
 
   function populatePeriods() {
     if (el.summaryPeriod.options.length) return;
@@ -1606,17 +1604,15 @@
 
     var kotor = income.reduce(function (a, r) { return a + r.v; }, 0);
     var rugi = beban.reduce(function (a, r) { return a + r.v; }, 0);
-    var bersih = kotor - rugi;
-    // Est hitungan dihitung dari Total Laba bersih.
-    var est = allocation.items.map(function (it) { return { name: it.name, pct: it.pct, v: bersih * it.pct }; });
+    var est = allocation.items.map(function (it) { return { name: it.name, pct: it.pct, v: kotor * it.pct }; });
     var estPct = est.reduce(function (a, e) { return a + e.pct; }, 0);
     var gaji = null;
     est.forEach(function (e) { if (gaji === null && /gaji/i.test(e.name)) gaji = e.v; });
     return {
       periodLabel: (month >= 0 ? MONTHS_FULL[month] + " " : "Tahun ") + year,
       income: income, beban: beban, notes: notes,
-      kotor: kotor, rugi: rugi, bersih: bersih,
-      est: est, estPct: estPct, estTotal: bersih * estPct,
+      kotor: kotor, rugi: rugi, bersih: kotor - rugi,
+      est: est, estPct: estPct, estTotal: kotor * estPct,
       gaji: gaji, persons: allocation.persons,
       empty: !Object.keys(ps.inc).length && !Object.keys(ps.out).length
     };
@@ -1652,8 +1648,7 @@
 
     h += '<tr class="lc-gap lc-gap-lg"><td colspan="3"></td></tr>';
     h += '<tr class="lc-title"><th colspan="3" scope="colgroup">Est hitungan' +
-      '<span class="lc-period">dari Total Laba bersih</span></th></tr>';
-    if (d.bersih < 0) h += '<tr class="lc-hint warn"><td colspan="3">Laba bersih negatif, jadi estimasi ikut minus.</td></tr>';
+      '<span class="lc-period">dari Total Laba kotor</span></th></tr>';
     d.est.forEach(function (e) {
       h += '<tr><td class="lc-label">' + escapeHtml(e.name) + '</td><td class="lc-num lc-pct">' + pctLabel(e.pct) + "</td>" +
         money(e.v) + "</tr>";
@@ -1715,23 +1710,21 @@
     el.splitYear.value = years.indexOf(pick) !== -1 ? pick : years[0];
     var year = el.splitYear.value;
 
-    // Laba bersih per bulan = pendapatan − Total Rugi (rumus yang sama dengan Summary).
+    // Laba kotor per bulan = total Cash In semua kode penjualan (sama dengan Summary).
     var kotor = monthTotalsOf(computeSalesMatrix(year), SALES_CODES);
-    var rugi = monthTotalsOf(computeExpenseMatrix(year), SHEET_RUGI_CODES);
-    var bersih = kotor.map(function (v, i) { return v - rugi[i]; });
     var lastM = -1;
-    bersih.forEach(function (v, i) { if (v || kotor[i] || rugi[i]) lastM = i; });
+    kotor.forEach(function (v, i) { if (v) lastM = i; });
 
     // SHU & Cash pegangan tampil lebih dulu, lalu pos lainnya.
     var items = allocation.items.map(function (it, i) {
       return { name: it.name, pct: it.pct, color: PALETTE[i % PALETTE.length],
-        values: bersih.map(function (v) { return v * it.pct; }) };
+        values: kotor.map(function (v) { return v * it.pct; }) };
     });
     function rank(it) { return /shu/i.test(it.name) ? 0 : (/cash/i.test(it.name) ? 1 : 2); }
     items.sort(function (a, b) { return rank(a) - rank(b); });
 
     el.splitCards.innerHTML = items.map(function (it) {
-      var sub = pctLabel(it.pct) + " dari Laba bersih" +
+      var sub = pctLabel(it.pct) + " dari Laba kotor" +
         (lastM >= 0 ? " · " + MONTHS_SHORT[lastM] + ": <b>" + formatRupiah(it.values[lastM]) + "</b>" : "");
       return '<div class="card split-card" style="--split-c:var(' + it.color + ')"><div class="card-body">' +
         '<span class="card-label">' + escapeHtml(splitLabel(it.name)) + "</span>" +
@@ -1749,7 +1742,7 @@
       values.forEach(function (v) { r += '<td class="col-num">' + cell(v) + "</td>"; });
       return r + '<td class="col-num exp-total-col">' + cell(sumArr(values)) + "</td></tr>";
     }
-    h += row("Total Laba bersih", bersih, "split-base");
+    h += row("Total Laba kotor", kotor, "split-base");
     items.forEach(function (it) { h += row(splitLabel(it.name) + " (" + pctLabel(it.pct) + ")", it.values, "", it.color); });
     h += "</tbody></table>";
     el.splitTable.innerHTML = h;
