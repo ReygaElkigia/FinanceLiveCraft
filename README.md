@@ -15,11 +15,12 @@ Aplikasi punya enam menu: **Cash Flow**, **Expense Log**, **Aset**,
   plus **Total Cash In, Total Cash Out, dan Total Saldo** keseluruhan.
   Bisa difilter per akun.
 - **Input transaksi** dengan pilihan **Kode** lewat dropdown:
-  `ADM, ADS, AST, CMS, DP, EAT, GA, GCC, GH, GO, HMS, HTB, INC, INT, KMS, KRS,
-  NC, NM, OEX, PLC, PLN, RMH, SHL, SHM, SOA, TRAN`
+  `ADM, ADS, AST, CMS, DP, EAT, GA, GCC, GH, GO, HMS, HTB, INT, KMS, KRS, OEX,
+  PLC, PLN, RMH, SHL, SHM, SOA, TRAN`
   (pendapatan `PLC` Paket LC, `KRS` Komisi RB & SK, `KMS` Komisi Mamah Salma;
   beban `HMS` Host Mamah Salma, `SHL` Beban Sheila)
-  (kode penjualan `DP/NM/NC/SOA/HTB` dipakai untuk menu Sales;
+  (kode penjualan `PLC/KRS/KMS/DP/SOA/HTB` dipakai untuk menu Sales;
+  kode lama `NM`→`PLC`, `NC`→`KRS`, `INC`→`KMS` otomatis dipindah;
   `GO` Gaji Owner tampil berwarna ungu di Cash Flow & Expense Log dengan label
   *tidak dihitung*, tapi **tidak** masuk Total Beban maupun Laba Bersih)
 - Format **Rupiah** otomatis pada kolom uang.
@@ -35,7 +36,7 @@ Aplikasi punya enam menu: **Cash Flow**, **Expense Log**, **Aset**,
 
 ### 2. Expense Log
 - **Otomatis** dihitung dari transaksi **Cash Out** di Cash Flow — tidak perlu
-  input ulang. Income (`INC`) tidak dihitung.
+  input ulang. Kode pendapatan (Cash In) tidak dihitung.
 - Matriks pengeluaran **per kode × per bulan** (Jan–Des) untuk tahun terpilih,
   dikelompokkan: Salary & Wages, Marketing, General & Administrative, Other.
 - Baris **TOTAL OPERATING EXPENSE**, total per kategori, selektor tahun,
@@ -58,7 +59,7 @@ Aplikasi punya enam menu: **Cash Flow**, **Expense Log**, **Aset**,
 
 ### 5. Sales
 - **Otomatis** dihitung dari transaksi **Cash In** di Cash Flow untuk kode
-  penjualan: `DP, NM, NC, INC` (Cash Sales) dan `SOA, HTB` (Non-Sales).
+  penjualan: `PLC, KRS, KMS, DP` (Cash Sales) dan `SOA, HTB` (Non-Sales).
   Withdraw investasi (`SHM`) tidak dihitung sebagai penjualan.
 - Matriks pendapatan **per kategori × per bulan** (Jan–Des), dikelompokkan
   **Cash Sales** dan **Cash Received from Non-Sales Activities**.

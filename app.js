@@ -27,12 +27,9 @@
     { code: "HMS",  label: "Gaji Host Mamah Salma" },
     { code: "GO",   label: "Gaji Owner" },
     { code: "HTB",  label: "Hutang Bank / Pinjaman" },
-    { code: "INC",  label: "Income / Pemasukan" },
     { code: "INT",  label: "Internet" },
     { code: "KMS",  label: "Komisi Mamah Salma (Pendapatan)" },
     { code: "KRS",  label: "Komisi RB & SK (Pendapatan)" },
-    { code: "NC",   label: "INTHEBOX Komisi (Penjualan)" },
-    { code: "NM",   label: "INTHEBOX Bulanan (Penjualan)" },
     { code: "OEX",  label: "Operasional Lain" },
     { code: "PLC",  label: "Income Paket LC (Pendapatan)" },
     { code: "PLN",  label: "Listrik / PLN" },
@@ -42,6 +39,17 @@
     { code: "SOA",  label: "Sale of Asset (Penjualan Aset)" },
     { code: "TRAN", label: "Transportasi" }
   ];
+
+  // Kode lama yang sudah diganti. Transaksi lama otomatis dipindah ke kode baru
+  // saat data dimuat (lokal maupun cloud), lalu disimpan kembali.
+  var CODE_RENAMES = { NM: "PLC", NC: "KRS", INC: "KMS" };
+  function migrateCodes(list) {
+    var changed = 0;
+    (list || []).forEach(function (t) {
+      if (t && CODE_RENAMES[t.kode]) { t.kode = CODE_RENAMES[t.kode]; changed++; }
+    });
+    return changed;
+  }
 
   var CODE_LABEL = {};
   CODES.forEach(function (c) { CODE_LABEL[c.code] = c.label; });
@@ -98,10 +106,7 @@
         { code: "PLC", label: "Income Paket LC" },
         { code: "KRS", label: "Komisi RB & SK" },
         { code: "KMS", label: "Komisi Mamah Salma" },
-        { code: "DP",  label: "INTHEBOX DP" },
-        { code: "NM",  label: "INTHEBOX (Monthly)" },
-        { code: "NC",  label: "INTHEBOX (Commission)" },
-        { code: "INC", label: "Income Lainnya" }
+        { code: "DP",  label: "INTHEBOX DP" }
       ]
     },
     {
@@ -2437,7 +2442,7 @@
   }
 
   function applyCloudDoc(key, data) {
-    if (key === "transactions") transactions = Array.isArray(data) ? data : [];
+    if (key === "transactions") { transactions = Array.isArray(data) ? data : []; migrateCodes(transactions); }
     else if (key === "assets") assets = Array.isArray(data) ? data : [];
     else if (key === "emergency") emergency = data || null;
     else if (key === "profitshares") PROFIT_SHARES = (Array.isArray(data) && data.length) ? data : PROFIT_SHARES;
@@ -2450,12 +2455,15 @@
     el.userBox.hidden = false;
     showGate("loading");
     window.Cloud.loadAll().then(function (d) {
-      applyCloudDoc("transactions", d.transactions);
+      var needsMigration = Array.isArray(d.transactions) &&
+        d.transactions.some(function (t) { return t && CODE_RENAMES[t.kode]; });
+      applyCloudDoc("transactions", d.transactions); // migrates in memory
       applyCloudDoc("assets", d.assets);
       applyCloudDoc("emergency", d.emergency);
       applyCloudDoc("profitshares", d.profitshares);
       applyCloudDoc("opening", d.opening);
       applyCloudDoc("allocation", d.allocation);
+      if (needsMigration) save(); // persist the renamed codes to the cloud once
       showGate("none");
       resetForm();
       resetAssetForm();
@@ -2543,6 +2551,7 @@
   if (useCloud) {
     initCloud();
   } else {
+    if (migrateCodes(transactions)) save(); // local data: rename old codes once
     if (window.Cloud) {
       // SDK ada tapi belum dikonfigurasi → jalan lokal (gerbang tetap tersembunyi)
     }
