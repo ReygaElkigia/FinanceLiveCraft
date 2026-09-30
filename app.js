@@ -304,6 +304,9 @@
     // Laba Rugi + Alokasi
     summaryPeriod: document.getElementById("summaryPeriod"),
     lcSheet: document.getElementById("lcSheet"),
+    splitYear: document.getElementById("splitYear"),
+    splitCards: document.getElementById("splitCards"),
+    splitTable: document.getElementById("splitTable"),
     exportSheetBtn: document.getElementById("exportSheetBtn"),
     allocEditBtn: document.getElementById("allocEditBtn"),
     allocEditor: document.getElementById("allocEditor"),
@@ -581,6 +584,7 @@
 
     renderOpeningNote();
     renderEmergency();
+    renderSplit();
   }
 
   // ---- CRUD ----
@@ -1688,6 +1692,67 @@
     URL.revokeObjectURL(url);
   }
 
+  // ---- Split Laba Kotor di Cash Flow (Est hitungan direkap per bulan) ----
+  function splitLabel(name) {
+    if (/shu/i.test(name)) return "Sisa SHU";
+    if (/cash/i.test(name)) return "Sisa Cash";
+    return "Tersisa " + name;
+  }
+  function renderSplit() {
+    var years = summaryYears();
+    var cur = el.splitYear.value;
+    el.splitYear.innerHTML = years.map(function (y) { return '<option value="' + y + '">' + y + "</option>"; }).join("");
+    var pick = (cur && years.indexOf(cur) !== -1) ? cur : latestYear();
+    el.splitYear.value = years.indexOf(pick) !== -1 ? pick : years[0];
+    var year = el.splitYear.value;
+
+    // Laba kotor per bulan = total Cash In semua kode penjualan (sama dengan Summary).
+    var kotor = monthTotalsOf(computeSalesMatrix(year), SALES_CODES);
+    var lastM = -1;
+    kotor.forEach(function (v, i) { if (v) lastM = i; });
+
+    // SHU & Cash pegangan tampil lebih dulu, lalu pos lainnya.
+    var items = allocation.items.map(function (it, i) {
+      return { name: it.name, pct: it.pct, color: PALETTE[i % PALETTE.length],
+        values: kotor.map(function (v) { return v * it.pct; }) };
+    });
+    function rank(it) { return /shu/i.test(it.name) ? 0 : (/cash/i.test(it.name) ? 1 : 2); }
+    items.sort(function (a, b) { return rank(a) - rank(b); });
+
+    el.splitCards.innerHTML = items.map(function (it) {
+      var sub = pctLabel(it.pct) + " dari Laba kotor" +
+        (lastM >= 0 ? " · " + MONTHS_SHORT[lastM] + ": <b>" + formatRupiah(it.values[lastM]) + "</b>" : "");
+      return '<div class="card split-card" style="--split-c:var(' + it.color + ')"><div class="card-body">' +
+        '<span class="card-label">' + escapeHtml(splitLabel(it.name)) + "</span>" +
+        '<span class="card-value">' + formatRupiah(sumArr(it.values)) + "</span>" +
+        '<span class="wallet-sub">' + sub + "</span></div></div>";
+    }).join("");
+
+    var h = '<table class="expense-table split-matrix">' + MATRIX_COLGROUP + "<thead><tr>" +
+      '<th class="exp-cat">Split per Bulan ' + year + "</th>";
+    MONTHS_SHORT.forEach(function (m) { h += '<th class="col-num">' + m + "</th>"; });
+    h += '<th class="col-num exp-total-col">Total</th></tr></thead><tbody>';
+    function row(label, values, cls, color) {
+      var r = '<tr class="' + (cls || "") + '"><td class="exp-cat">' +
+        (color ? '<span class="chart-swatch" style="background:var(' + color + ')"></span>' : "") + escapeHtml(label) + "</td>";
+      values.forEach(function (v) { r += '<td class="col-num">' + cell(v) + "</td>"; });
+      return r + '<td class="col-num exp-total-col">' + cell(sumArr(values)) + "</td></tr>";
+    }
+    h += row("Total Laba kotor", kotor, "split-base");
+    items.forEach(function (it) { h += row(splitLabel(it.name) + " (" + pctLabel(it.pct) + ")", it.values, "", it.color); });
+    h += "</tbody></table>";
+    el.splitTable.innerHTML = h;
+    // Geser tabel agar bulan terakhir yang berisi data langsung terlihat.
+    if (lastM >= 0) {
+      var th = el.splitTable.querySelectorAll("thead th")[lastM + 1];
+      if (th && el.splitTable.clientWidth) {
+        el.splitTable.scrollLeft = 0;
+        var box = el.splitTable.getBoundingClientRect(), r = th.getBoundingClientRect();
+        el.splitTable.scrollLeft = Math.max(0, r.right - box.right + 8);
+      }
+    }
+  }
+
   // Editor alokasi
   function allocRow(name, pctNum) {
     var row = document.createElement("div");
@@ -1751,6 +1816,7 @@
     saveAlloc();
     closeAllocEditor();
     renderSheet(el.summaryYear.value || String(new Date().getFullYear()));
+    renderSplit();
   }
 
   // ================= CHARTS =================
@@ -2041,7 +2107,7 @@
     el.navTabs.forEach(function (tab) {
       tab.classList.toggle("is-active", tab.getAttribute("data-view") === view);
     });
-    if (view === "cashflow") renderCashflowCharts();
+    if (view === "cashflow") { renderCashflowCharts(); renderSplit(); }
     if (view === "expense") renderExpense();
     if (view === "asset") renderAssets();
     if (view === "invest") renderInvest();
@@ -2189,6 +2255,7 @@
     renderSheet(el.summaryYear.value || String(new Date().getFullYear()));
   });
   el.exportSheetBtn.addEventListener("click", exportSheetCSV);
+  el.splitYear.addEventListener("change", renderSplit);
 
   el.allocEditBtn.addEventListener("click", function () {
     if (el.allocEditor.hidden) openAllocEditor(); else closeAllocEditor();

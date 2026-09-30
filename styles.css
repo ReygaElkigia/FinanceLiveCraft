@@ -1193,6 +1193,26 @@ tfoot td {
 .alloc-persons-label { display: inline-flex; align-items: center; gap: 0.4rem; }
 .alloc-persons { width: 70px; padding: 0.4rem 0.5rem; text-align: center; }
 
+/* Cash Flow: Split Laba Kotor */
+.split-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem 1rem; flex-wrap: wrap; margin-bottom: 1rem; }
+.split-head .panel-title { margin-bottom: 0.3rem; }
+.split-controls { display: flex; align-items: center; gap: 0.5rem; }
+.split-controls .select-plain { width: auto; min-width: 100px; }
+.split-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 0.9rem; margin-bottom: 1.1rem; }
+.split-card { box-shadow: var(--shadow-sm); }
+.split-card::before { background: var(--split-c); }
+.split-card .card-value { color: var(--ink); font-size: 1.15rem; }
+.split-card .wallet-sub b { color: var(--ink); }
+.split-table { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius-sm); -webkit-overflow-scrolling: touch; }
+.split-matrix thead th,
+.split-matrix thead th.col-num,
+.split-matrix thead th.exp-cat { color: #fff; background: linear-gradient(180deg, var(--green-700), var(--green-800)); }
+.split-matrix tbody .col-num { color: var(--ink); }
+.split-matrix tbody .exp-cat { white-space: normal; line-height: 1.35; }
+.split-matrix .split-base td { font-weight: 800; background: var(--bg); }
+.split-matrix .split-base .col-num { color: var(--in); }
+.split-matrix .exp-cat .chart-swatch { margin-right: 0.45rem; vertical-align: -1px; }
+
 /* Per-chart detail row */
 .chart-stats {
   display: flex;
@@ -1258,6 +1278,10 @@ tfoot td {
   .insight-grid { grid-template-columns: 1fr; }
   /* The wrapped header is tall on phones; let it scroll away instead of pinning */
   .app-header { position: static; }
+  .split-matrix { min-width: 0; width: 1580px; } /* 124 + 13 × 112 */
+  .split-matrix col.ec-cat { width: 124px; }
+  .split-matrix col.ec-month, .split-matrix col.ec-total { width: 112px; }
+  .split-matrix thead th.exp-cat { white-space: normal; line-height: 1.3; }
   /* Hitungan LC on phones: each row becomes label | amount (empty cells drop out) */
   .lc-table, .lc-table tbody { display: block; min-width: 0; font-size: 0.88rem; }
   .lc-table colgroup { display: none; }

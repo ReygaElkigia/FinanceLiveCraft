@@ -33,6 +33,10 @@ Aplikasi punya enam menu: **Cash Flow**, **Expense Log**, **Aset**,
 - **Dana Darurat** — tetapkan jumlah dana darurat & tanggal mulai; sisanya
   otomatis dikurangi total **Cash Out** sejak tanggal itu, lengkap dengan
   bilah progres (hijau/oranye/merah) dan status bila melebihi dana.
+- **Split Laba Kotor** — dashboard **Sisa SHU**, **Sisa Cash**, dan **Tersisa**
+  per pos lainnya (Beban operasional, Ads, Gaji), diambil dari **Est hitungan**
+  di Summary (% × Total Laba kotor) dan direkap per bulan (tabel Jan–Des +
+  Total, pilih tahun). Persentase ikut berubah bila diatur di Summary.
 
 ### 2. Expense Log
 - **Otomatis** dihitung dari transaksi **Cash Out** di Cash Flow — tidak perlu
