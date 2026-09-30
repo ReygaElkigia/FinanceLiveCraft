@@ -72,6 +72,36 @@
 /* Ensure the hidden attribute always wins over display rules (grid/flex) */
 [hidden] { display: none !important; }
 
+/* ---------- SVG icons ---------- */
+.ico { width: 1em; height: 1em; display: block; flex: none; }
+.card-icon .ico { width: 22px; height: 22px; }
+.brand-mark .ico { width: 22px; height: 22px; }
+.nav-ico { display: inline-grid; place-items: center; }
+.nav-ico .ico { width: 16px; height: 16px; }
+.nav-tab { display: inline-flex; align-items: center; gap: 0.45rem; }
+#logoutBtn { display: inline-flex; align-items: center; gap: 0.4rem; }
+#logoutBtn .ico { width: 16px; height: 16px; }
+
+/* ---------- Accessibility ---------- */
+/* Visible keyboard focus everywhere (never remove focus rings) */
+:focus-visible {
+  outline: 2.5px solid var(--green-500);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+.app-header :focus-visible { outline-color: var(--orange); }
+
+/* Respect users who ask for less motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .card:hover { transform: none; }
+}
+
 html { scroll-behavior: smooth; }
 
 body {
@@ -181,7 +211,16 @@ body {
     radial-gradient(1000px 500px at 100% -10%, rgba(28,157,111,0.18), transparent 60%),
     var(--grad-header);
 }
+.auth-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
 .auth-card {
+  position: relative;
+  z-index: 1;
   width: 100%;
   max-width: 400px;
   background: var(--card-bg);
@@ -374,6 +413,28 @@ body {
   border-radius: 3px;
   background: var(--grad-primary);
 }
+
+/* Ringkasan bulan terakhir */
+.insight-head { display: flex; align-items: baseline; justify-content: space-between; gap: 0.5rem 1rem; flex-wrap: wrap; margin-bottom: 1rem; }
+.insight-head .panel-title { margin: 0; }
+.insight-sub { font-size: 0.85rem; color: var(--muted); }
+.insight-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+.ins {
+  display: flex; flex-direction: column; gap: 0.3rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  min-width: 0;
+}
+.ins-v { font-size: 1.15rem; font-weight: 800; letter-spacing: -0.4px; font-variant-numeric: tabular-nums; }
+.ins-v.good { color: var(--in); }
+.ins-v.bad { color: var(--out); }
+.ins-d { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.78rem; font-weight: 700; }
+.ins-d .ico { width: 15px; height: 15px; }
+.ins-d.good { color: var(--in); }
+.ins-d.bad { color: var(--out); }
+.ins-d.neutral { color: var(--muted); font-weight: 600; }
 
 /* Saldo Awal */
 .opening-panel { border-left: 4px solid var(--green-600); }
@@ -661,13 +722,20 @@ tbody tr:hover td { color: var(--ink); }
   cursor: pointer;
   font-size: 0.95rem;
   line-height: 1;
-  width: 34px;
-  height: 34px;
-  border-radius: 8px;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
   color: var(--muted);
+  display: inline-grid;
+  place-items: center;
+  position: relative;
+  vertical-align: middle;
   transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
-.icon-btn + .icon-btn { margin-left: 0.35rem; }
+/* Extend the hit area to 44×44 without growing the visual */
+.icon-btn::after { content: ""; position: absolute; inset: -2px; }
+.icon-btn .ico { width: 18px; height: 18px; }
+.icon-btn + .icon-btn { margin-left: 0.4rem; }
 .icon-btn:hover { background: var(--green-50); color: var(--green-700); border-color: var(--green-600); }
 .icon-btn.del:hover { background: rgba(214,69,69,0.12); color: var(--out); border-color: var(--out); }
 
@@ -979,6 +1047,64 @@ tfoot td {
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
+/* Hover layer */
+.chart-hit { fill: transparent; pointer-events: all; cursor: crosshair; }
+.chart-band { fill: var(--ink); opacity: 0; transition: opacity 0.15s; }
+.chart-band.is-on { opacity: 0.06; }
+.chart-guide { stroke: var(--ch-muted); stroke-width: 1; stroke-dasharray: 3 3; opacity: 0; }
+.chart-guide.is-on { opacity: 0.7; }
+.chart-dot { transition: r 0.15s; }
+.chart-dot.is-on { r: 6; }
+.chart-hbar { transition: filter 0.15s; }
+.chart-hbar.is-on { filter: brightness(1.12); }
+.chart-arc.is-on { opacity: 1; filter: brightness(1.1); stroke-width: 3; }
+.chart-maxlabel {
+  fill: var(--ink);
+  font-size: 11px;
+  font-weight: 700;
+  font-family: var(--font);
+  font-variant-numeric: tabular-nums;
+}
+.chart-tip {
+  position: fixed;
+  left: 0; top: 0;
+  z-index: 200;
+  pointer-events: none;
+  min-width: 150px;
+  max-width: 260px;
+  padding: 0.6rem 0.75rem;
+  border-radius: 10px;
+  background: var(--card-bg);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-lg);
+  font-size: 0.8rem;
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+.chart-tip.is-on { opacity: 1; }
+.tt-title { font-weight: 800; margin-bottom: 0.35rem; font-size: 0.82rem; }
+.tt-row { display: flex; align-items: center; gap: 0.45rem; padding: 0.12rem 0; }
+.tt-sw { width: 9px; height: 9px; border-radius: 3px; flex: none; }
+.tt-name { color: var(--muted); flex: 1; }
+.tt-val { font-variant-numeric: tabular-nums; font-weight: 700; white-space: nowrap; }
+
+/* Per-chart detail row */
+.chart-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.4rem;
+  margin: -0.35rem 0 1rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px dashed var(--line);
+}
+.chart-stats:empty { display: none; }
+.cs { display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; }
+.cs-l { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: var(--muted); }
+.cs-v { font-size: 0.95rem; font-weight: 800; color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.cs-v.good { color: var(--in); }
+.cs-v.bad { color: var(--out); }
+
 .chart-empty {
   display: grid;
   place-items: center;
@@ -1011,6 +1137,7 @@ tfoot td {
   .summary { grid-template-columns: repeat(2, 1fr); }
   .summary.summary-3 { grid-template-columns: repeat(3, 1fr); }
   .dashboard-2 { grid-template-columns: 1fr; }
+  .insight-grid { grid-template-columns: 1fr 1fr; }
   .entry-form { grid-template-columns: 1fr 1fr; }
   .asset-form { grid-template-columns: repeat(3, 1fr); }
   .field-wide { grid-column: 1 / -1; }
@@ -1024,6 +1151,9 @@ tfoot td {
   .entry-form { grid-template-columns: 1fr; }
   .emg-form { grid-template-columns: 1fr; }
   .opening-form { grid-template-columns: 1fr; }
+  .insight-grid { grid-template-columns: 1fr; }
+  /* The wrapped header is tall on phones; let it scroll away instead of pinning */
+  .app-header { position: static; }
   .container { padding: 1rem; }
 
   /* Card-style transform applies to data tables (Cash Flow & Aset) */

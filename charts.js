@@ -2,6 +2,9 @@
  * Colors come from CSS custom properties (--ser-1..6, --ch-*) so light/dark
  * themes adapt automatically. Series palette follows the validated dataviz
  * categorical order (blue, orange, aqua, yellow, magenta, green).
+ *
+ * Every chart ships a hover layer: a styled tooltip with exact Rupiah values
+ * on hit areas larger than the marks (a whole month column for bars/lines).
  */
 (function () {
   "use strict";
@@ -14,6 +17,11 @@
   }
   function clear(c) { c.innerHTML = ""; }
   function rupiah(n) { return "Rp" + Math.round(n).toLocaleString("id-ID"); }
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (ch) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch];
+    });
+  }
   function trim(x) {
     var v = Math.round(x * 10) / 10;
     return (Number.isInteger(v) ? v : v.toFixed(1)).toString().replace(".", ",");
@@ -55,18 +63,16 @@
   }
   function roundedTop(x, y, w, h, r) {
     r = Math.min(r, w / 2, Math.abs(h));
-    if (h >= 0) {
-      return "M" + x + "," + (y + h) + " L" + x + "," + (y + r) + " Q" + x + "," + y + " " + (x + r) + "," + y +
-        " L" + (x + w - r) + "," + y + " Q" + (x + w) + "," + y + " " + (x + w) + "," + (y + r) +
-        " L" + (x + w) + "," + (y + h) + " Z";
-    }
-    // negative bar: rounded bottom, anchored at y (baseline), extends down by -h
-    var hh = -h;
-    return "M" + x + "," + y + " L" + x + "," + (y + hh - r) + " Q" + x + "," + (y + hh) + " " + (x + r) + "," + (y + hh) +
-      " L" + (x + w - r) + "," + (y + hh) + " Q" + (x + w) + "," + (y + hh) + " " + (x + w) + "," + (y + hh - r) +
+    return "M" + x + "," + (y + h) + " L" + x + "," + (y + r) + " Q" + x + "," + y + " " + (x + r) + "," + y +
+      " L" + (x + w - r) + "," + y + " Q" + (x + w) + "," + y + " " + (x + w) + "," + (y + r) +
+      " L" + (x + w) + "," + (y + h) + " Z";
+  }
+  function roundedBottom(x, y, w, h, r) {
+    r = Math.min(r, w / 2, h);
+    return "M" + x + "," + y + " L" + x + "," + (y + h - r) + " Q" + x + "," + (y + h) + " " + (x + r) + "," + (y + h) +
+      " L" + (x + w - r) + "," + (y + h) + " Q" + (x + w) + "," + (y + h) + " " + (x + w) + "," + (y + h - r) +
       " L" + (x + w) + "," + y + " Z";
   }
-
   function scale(values) {
     var mx = 0, mn = 0;
     values.forEach(function (v) { if (v > mx) mx = v; if (v < mn) mn = v; });
@@ -75,7 +81,51 @@
     return { top: top, bot: bot, range: top - bot };
   }
 
-  // ---- Grouped/single vertical bars (supports negatives) ----
+  // ---------- Shared tooltip ----------
+  var tip = null;
+  function ensureTip() {
+    if (!tip) {
+      tip = document.createElement("div");
+      tip.className = "chart-tip";
+      tip.setAttribute("role", "tooltip");
+      document.body.appendChild(tip);
+      document.addEventListener("scroll", hideTip, true);
+    }
+    return tip;
+  }
+  function tipRows(title, rows) {
+    var h = '<div class="tt-title">' + esc(title) + "</div>";
+    rows.forEach(function (r) {
+      h += '<div class="tt-row">' +
+        (r.colorVar ? '<span class="tt-sw" style="background:var(' + r.colorVar + ')"></span>' : "") +
+        '<span class="tt-name">' + esc(r.name) + '</span><b class="tt-val">' + esc(r.value) + "</b></div>";
+    });
+    return h;
+  }
+  function moveTip(e) {
+    if (!tip) return;
+    var r = tip.getBoundingClientRect();
+    var x = e.clientX + 14, y = e.clientY + 14;
+    if (x + r.width > window.innerWidth - 8) x = e.clientX - r.width - 14;
+    if (y + r.height > window.innerHeight - 8) y = e.clientY - r.height - 14;
+    tip.style.transform = "translate(" + Math.max(8, x) + "px," + Math.max(8, y) + "px)";
+  }
+  function showTip(html, e) {
+    var t = ensureTip();
+    t.innerHTML = html;
+    t.classList.add("is-on");
+    moveTip(e);
+  }
+  function hideTip() { if (tip) tip.classList.remove("is-on"); }
+  // Bind pointer events (mouse + touch) on a hit element.
+  function bindHover(el, html, onEnter, onLeave) {
+    el.addEventListener("pointerenter", function (e) { showTip(html, e); if (onEnter) onEnter(); });
+    el.addEventListener("pointermove", moveTip);
+    el.addEventListener("pointerdown", function (e) { showTip(html, e); if (onEnter) onEnter(); });
+    el.addEventListener("pointerleave", function () { hideTip(); if (onLeave) onLeave(); });
+  }
+
+  // ---------- Grouped/single vertical bars (supports negatives) ----------
   function bars(container, cfg) {
     clear(container);
     var all = [];
@@ -85,65 +135,97 @@
     if (cfg.series.length > 1) container.appendChild(legend(cfg.series));
 
     var W = Math.max(container.clientWidth || 320, 280), H = cfg.height || 240;
-    var padL = 46, padR = 14, padT = 12, padB = 26;
+    var padL = 46, padR = 14, padT = 20, padB = 26;
     var plotW = W - padL - padR, plotH = H - padT - padB;
     var sc = scale(all);
     function Y(v) { return padT + plotH - (v - sc.bot) / sc.range * plotH; }
 
     var s = svg("svg", { width: W, height: H, viewBox: "0 0 " + W + " " + H, class: "chart-svg", role: "img" });
+    if (cfg.ariaLabel) s.setAttribute("aria-label", cfg.ariaLabel);
 
     var ticks = 4;
     for (var i = 0; i <= ticks; i++) {
-      var val = sc.bot + (sc.range) * i / ticks;
-      var y = Y(val);
+      var val = sc.bot + sc.range * i / ticks, y = Y(val);
       s.appendChild(svg("line", { x1: padL, y1: y, x2: W - padR, y2: y, class: "chart-grid" }));
       var t = svg("text", { x: padL - 6, y: y + 3, class: "chart-ytick", "text-anchor": "end" });
       t.textContent = compact(val); s.appendChild(t);
     }
-    var zeroY = Y(0);
-    s.appendChild(svg("line", { x1: padL, y1: zeroY, x2: W - padR, y2: zeroY, class: "chart-axis" }));
 
     var n = cfg.labels.length, ns = cfg.series.length;
     var groupW = plotW / n, innerPad = groupW * 0.16;
     var barSpace = groupW - innerPad * 2;
     var bw = Math.max(2, (barSpace - (ns - 1) * 2) / ns);
+    var zeroY = Y(0);
+
+    // Hover band layer sits under the bars
+    var bandLayer = svg("g", { class: "chart-bands" });
+    s.appendChild(bandLayer);
+
+    // Track the single highest bar for a selective direct label
+    var maxV = -Infinity, maxX = 0, maxY = 0;
 
     cfg.labels.forEach(function (lab, gi) {
       var gx = padL + gi * groupW + innerPad;
       cfg.series.forEach(function (ser, si) {
         var v = ser.values[gi] || 0;
         if (!v) return;
-        var yTop = Y(Math.max(v, 0)), h = v >= 0 ? (zeroY - Y(v)) : -(Y(v) - zeroY);
         var x = gx + si * (bw + 2);
-        var p = svg("path", { d: roundedTop(x, v >= 0 ? Y(v) : zeroY, bw, v >= 0 ? (zeroY - Y(v)) : (Y(v) - zeroY), 4), class: "chart-bar" });
+        var d = v >= 0 ? roundedTop(x, Y(v), bw, zeroY - Y(v), 4) : roundedBottom(x, zeroY, bw, Y(v) - zeroY, 4);
+        var p = svg("path", { d: d, class: "chart-bar" });
         p.style.fill = "var(" + ser.colorVar + ")";
-        var tt = svg("title"); tt.textContent = (ns > 1 ? ser.name + " · " : "") + lab + ": " + rupiah(v);
-        p.appendChild(tt);
         s.appendChild(p);
+        if (v > maxV) { maxV = v; maxX = x + bw / 2; maxY = Y(v); }
       });
       var xt = svg("text", { x: padL + gi * groupW + groupW / 2, y: H - 8, class: "chart-xtick", "text-anchor": "middle" });
       xt.textContent = lab; s.appendChild(xt);
     });
+
+    s.appendChild(svg("line", { x1: padL, y1: zeroY, x2: W - padR, y2: zeroY, class: "chart-axis" }));
+
+    if (maxV > 0) {
+      var ml = svg("text", { x: maxX, y: maxY - 6, class: "chart-maxlabel", "text-anchor": "middle" });
+      ml.textContent = compact(maxV);
+      s.appendChild(ml);
+    }
+
+    // Hit areas: one full-height column per month showing every series
+    cfg.labels.forEach(function (lab, gi) {
+      var hasAny = cfg.series.some(function (ser) { return ser.values[gi]; });
+      if (!hasAny) return;
+      var x0 = padL + gi * groupW;
+      var band = svg("rect", { x: x0, y: padT, width: groupW, height: plotH, class: "chart-band" });
+      bandLayer.appendChild(band);
+      var rows = cfg.series.map(function (ser) {
+        return { name: ser.name, colorVar: ser.colorVar, value: rupiah(ser.values[gi] || 0) };
+      });
+      var hit = svg("rect", { x: x0, y: padT, width: groupW, height: plotH + padB, class: "chart-hit" });
+      bindHover(hit, tipRows(cfg.fullLabels ? cfg.fullLabels[gi] : lab, rows),
+        function () { band.classList.add("is-on"); },
+        function () { band.classList.remove("is-on"); });
+      s.appendChild(hit);
+    });
+
     container.appendChild(s);
   }
 
-  // ---- Line/area (single series, supports negatives) ----
+  // ---------- Line/area (single series, supports negatives) ----------
   function area(container, cfg) {
     clear(container);
     if (cfg.values.every(function (v) { return !v; })) { emptyMsg(container, cfg.empty); return; }
     var W = Math.max(container.clientWidth || 320, 280), H = cfg.height || 240;
-    var padL = 46, padR = 14, padT = 12, padB = 26;
+    var padL = 46, padR = 14, padT = 14, padB = 26;
     var plotW = W - padL - padR, plotH = H - padT - padB;
     var sc = scale(cfg.values);
     var color = cfg.colorVar || "--ser-1";
-    function X(i) { return cfg.values.length <= 1 ? padL + plotW / 2 : padL + i / (cfg.values.length - 1) * plotW; }
+    var len = cfg.values.length;
+    function X(i) { return len <= 1 ? padL + plotW / 2 : padL + i / (len - 1) * plotW; }
     function Y(v) { return padT + plotH - (v - sc.bot) / sc.range * plotH; }
 
     var s = svg("svg", { width: W, height: H, viewBox: "0 0 " + W + " " + H, class: "chart-svg", role: "img" });
+    if (cfg.ariaLabel) s.setAttribute("aria-label", cfg.ariaLabel);
 
-    var ticks = 4;
-    for (var i = 0; i <= ticks; i++) {
-      var val = sc.bot + sc.range * i / ticks, y = Y(val);
+    for (var i = 0; i <= 4; i++) {
+      var val = sc.bot + sc.range * i / 4, y = Y(val);
       s.appendChild(svg("line", { x1: padL, y1: y, x2: W - padR, y2: y, class: "chart-grid" }));
       var t = svg("text", { x: padL - 6, y: y + 3, class: "chart-ytick", "text-anchor": "end" });
       t.textContent = compact(val); s.appendChild(t);
@@ -158,60 +240,88 @@
     var st2 = svg("stop", { offset: "100%" }); st2.style.stopColor = "var(" + color + ")"; st2.style.stopOpacity = "0.02";
     lg.appendChild(st1); lg.appendChild(st2); defs.appendChild(lg); s.appendChild(defs);
 
-    var line = "", areaP = "";
-    cfg.values.forEach(function (v, i) {
-      line += (i ? " L" : "M") + X(i) + "," + Y(v);
-    });
-    areaP = line + " L" + X(cfg.values.length - 1) + "," + zeroY + " L" + X(0) + "," + zeroY + " Z";
+    var line = "";
+    cfg.values.forEach(function (v, i) { line += (i ? " L" : "M") + X(i) + "," + Y(v); });
+    var areaP = line + " L" + X(len - 1) + "," + zeroY + " L" + X(0) + "," + zeroY + " Z";
     var ap = svg("path", { d: areaP, class: "chart-area" }); ap.style.fill = "url(#" + gid + ")"; s.appendChild(ap);
     var lp = svg("path", { d: line, class: "chart-line" }); lp.style.stroke = "var(" + color + ")"; s.appendChild(lp);
 
+    var guide = svg("line", { x1: 0, y1: padT, x2: 0, y2: padT + plotH, class: "chart-guide" });
+    s.appendChild(guide);
+
+    var dots = [];
     cfg.values.forEach(function (v, i) {
-      if (v === 0 && cfg.values.length > 1) return;
       var dot = svg("circle", { cx: X(i), cy: Y(v), r: 3.5, class: "chart-dot" });
       dot.style.fill = "var(" + color + ")";
-      var tt = svg("title"); tt.textContent = cfg.labels[i] + ": " + rupiah(v); dot.appendChild(tt);
       s.appendChild(dot);
+      dots.push(dot);
     });
     cfg.labels.forEach(function (lab, i) {
       var xt = svg("text", { x: X(i), y: H - 8, class: "chart-xtick", "text-anchor": "middle" });
       xt.textContent = lab; s.appendChild(xt);
     });
+
+    // Hit columns centred on each point: crosshair + tooltip
+    var colW = len <= 1 ? plotW : plotW / (len - 1);
+    cfg.values.forEach(function (v, i) {
+      var hx = Math.max(padL, X(i) - colW / 2);
+      var hw = Math.min(W - padR, X(i) + colW / 2) - hx;
+      var hit = svg("rect", { x: hx, y: padT, width: hw, height: plotH + padB, class: "chart-hit" });
+      var prev = i > 0 ? cfg.values[i - 1] : null;
+      var rows = [{ name: cfg.seriesName || "Nilai", colorVar: color, value: rupiah(v) }];
+      if (prev !== null) rows.push({ name: "Perubahan", value: (v - prev >= 0 ? "+" : "") + rupiah(v - prev) });
+      bindHover(hit, tipRows(cfg.fullLabels ? cfg.fullLabels[i] : cfg.labels[i], rows),
+        function () {
+          guide.setAttribute("x1", X(i)); guide.setAttribute("x2", X(i));
+          guide.classList.add("is-on"); dots[i].classList.add("is-on");
+        },
+        function () { guide.classList.remove("is-on"); dots[i].classList.remove("is-on"); });
+      s.appendChild(hit);
+    });
     container.appendChild(s);
   }
 
-  // ---- Horizontal ranked bars (single hue, label above) ----
+  // ---------- Horizontal ranked bars (single hue, label above, share %) ----------
   function hbars(container, cfg) {
     clear(container);
-    var items = cfg.items.filter(function (i) { return i.value > 0; })
+    var all = cfg.items.filter(function (i) { return i.value > 0; })
       .sort(function (a, b) { return b.value - a.value; });
-    if (cfg.limit) items = items.slice(0, cfg.limit);
-    if (!items.length) { emptyMsg(container, cfg.empty); return; }
-    var maxV = Math.max.apply(null, items.map(function (i) { return i.value; }));
+    if (!all.length) { emptyMsg(container, cfg.empty); return; }
+    var sum = all.reduce(function (a, b) { return a + b.value; }, 0);
+    var items = cfg.limit ? all.slice(0, cfg.limit) : all;
+    var maxV = items[0].value;
     var color = cfg.colorVar || "--ser-1";
     var W = Math.max(container.clientWidth || 320, 260);
     var rowH = 20, labelH = 18, gap = 14, padR = 4;
     var H = items.length * (rowH + labelH + gap);
     var s = svg("svg", { width: W, height: H, viewBox: "0 0 " + W + " " + H, class: "chart-svg", role: "img" });
+    if (cfg.ariaLabel) s.setAttribute("aria-label", cfg.ariaLabel);
 
     items.forEach(function (it, idx) {
       var top = idx * (rowH + labelH + gap);
+      var pct = sum ? Math.round(it.value / sum * 100) : 0;
       var lab = svg("text", { x: 0, y: top + 13, class: "chart-hlabel" });
       lab.textContent = it.label; s.appendChild(lab);
       var val = svg("text", { x: W - padR, y: top + 13, class: "chart-vlabel", "text-anchor": "end" });
-      val.textContent = compact(it.value); s.appendChild(val);
+      val.textContent = compact(it.value) + " · " + pct + "%"; s.appendChild(val);
       var by = top + labelH;
       s.appendChild(svg("rect", { x: 0, y: by, width: W - padR, height: rowH, rx: 6, class: "chart-track" }));
       var w = Math.max(3, it.value / maxV * (W - padR));
-      var bar = svg("rect", { x: 0, y: by, width: w, height: rowH, rx: 6, class: "chart-bar" });
+      var bar = svg("rect", { x: 0, y: by, width: w, height: rowH, rx: 6, class: "chart-hbar" });
       bar.style.fill = "var(" + color + ")";
-      var tt = svg("title"); tt.textContent = it.label + ": " + rupiah(it.value); bar.appendChild(tt);
       s.appendChild(bar);
+      var hit = svg("rect", { x: 0, y: top, width: W, height: rowH + labelH + gap / 2, class: "chart-hit" });
+      bindHover(hit, tipRows(it.full || it.label, [
+        { name: "Nilai", colorVar: color, value: rupiah(it.value) },
+        { name: "Porsi", value: pct + "% dari total" },
+        { name: "Peringkat", value: "#" + (idx + 1) + " dari " + all.length }
+      ]), function () { bar.classList.add("is-on"); }, function () { bar.classList.remove("is-on"); });
+      s.appendChild(hit);
     });
     container.appendChild(s);
   }
 
-  // ---- Donut (part-of-whole, labeled) ----
+  // ---------- Donut (part-of-whole, labeled) ----------
   function arc(cx, cy, R, r, a0, a1) {
     var x0 = cx + R * Math.cos(a0), y0 = cy + R * Math.sin(a0);
     var x1 = cx + R * Math.cos(a1), y1 = cy + R * Math.sin(a1);
@@ -231,37 +341,55 @@
     wrap.className = "chart-donut";
     var size = 190, cx = size / 2, cy = size / 2, R = size / 2 - 4, r = R * 0.62;
     var s = svg("svg", { width: size, height: size, viewBox: "0 0 " + size + " " + size, class: "chart-donut-svg", role: "img" });
+    if (cfg.ariaLabel) s.setAttribute("aria-label", cfg.ariaLabel);
+
+    var ct = svg("text", { x: cx, y: cy - 2, class: "chart-donut-total", "text-anchor": "middle" });
+    var cl = svg("text", { x: cx, y: cy + 14, class: "chart-donut-sub", "text-anchor": "middle" });
+    function resetCenter() { ct.textContent = compact(total); cl.textContent = cfg.centerLabel || "Total"; }
+
     var a0 = -Math.PI / 2, gap = items.length > 1 ? 0.03 : 0;
+    var rows = [];
     items.forEach(function (it) {
       var frac = it.value / total, a1 = a0 + frac * 2 * Math.PI;
       var p = svg("path", { d: arc(cx, cy, R, r, a0 + gap / 2, a1 - gap / 2), class: "chart-arc" });
       p.style.fill = "var(" + it.colorVar + ")";
-      var tt = svg("title"); tt.textContent = it.label + ": " + rupiah(it.value) + " (" + Math.round(frac * 100) + "%)";
-      p.appendChild(tt); s.appendChild(p);
+      var pct = Math.round(frac * 100);
+      bindHover(p, tipRows(it.label, [
+        { name: "Nilai", colorVar: it.colorVar, value: rupiah(it.value) },
+        { name: "Porsi", value: pct + "%" }
+      ]), function () {
+        p.classList.add("is-on");
+        ct.textContent = pct + "%";
+        cl.textContent = it.label.length > 16 ? it.label.slice(0, 15) + "…" : it.label;
+      }, function () { p.classList.remove("is-on"); resetCenter(); });
+      s.appendChild(p);
+      rows.push({ it: it, path: p, pct: pct });
       a0 = a1;
     });
-    var ct = svg("text", { x: cx, y: cy - 2, class: "chart-donut-total", "text-anchor": "middle" });
-    ct.textContent = compact(total); s.appendChild(ct);
-    var cl = svg("text", { x: cx, y: cy + 14, class: "chart-donut-sub", "text-anchor": "middle" });
-    cl.textContent = cfg.centerLabel || "Total"; s.appendChild(cl);
+    resetCenter();
+    s.appendChild(ct); s.appendChild(cl);
     wrap.appendChild(s);
 
     var leg = document.createElement("div");
     leg.className = "chart-legend chart-legend-col";
-    items.forEach(function (it) {
-      var row = document.createElement("span");
-      row.className = "chart-legend-item";
+    rows.forEach(function (row) {
+      var el = document.createElement("span");
+      el.className = "chart-legend-item";
       var sw = document.createElement("span");
-      sw.className = "chart-swatch"; sw.style.background = "var(" + it.colorVar + ")";
+      sw.className = "chart-swatch"; sw.style.background = "var(" + row.it.colorVar + ")";
       var txt = document.createElement("span");
       txt.className = "chart-legend-txt";
-      txt.innerHTML = "<span class='chart-legend-name'>" + it.label + "</span>" +
-        "<span class='chart-legend-val'>" + rupiah(it.value) + " · " + Math.round(it.value / total * 100) + "%</span>";
-      row.appendChild(sw); row.appendChild(txt); leg.appendChild(row);
+      txt.innerHTML = "<span class='chart-legend-name'>" + esc(row.it.label) + "</span>" +
+        "<span class='chart-legend-val'>" + rupiah(row.it.value) + " · " + row.pct + "%</span>";
+      el.appendChild(sw); el.appendChild(txt);
+      // Hovering a legend row highlights its slice too
+      el.addEventListener("pointerenter", function () { row.path.classList.add("is-on"); });
+      el.addEventListener("pointerleave", function () { row.path.classList.remove("is-on"); });
+      leg.appendChild(el);
     });
     wrap.appendChild(leg);
     container.appendChild(wrap);
   }
 
-  window.Charts = { bars: bars, area: area, hbars: hbars, donut: donut, rupiah: rupiah };
+  window.Charts = { bars: bars, area: area, hbars: hbars, donut: donut, rupiah: rupiah, compact: compact };
 })();

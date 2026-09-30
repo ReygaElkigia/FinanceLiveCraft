@@ -93,6 +93,21 @@ dan menyesuaikan tema terang/gelap.
 
 Semua data disimpan otomatis di browser (**localStorage**) — tanpa backend.
 
+## UI, Animasi & Aksesibilitas
+
+- **Ikon SVG** konsisten (tanpa emoji), tombol ikon dengan area sentuh 44px,
+  cincin fokus keyboard yang terlihat.
+- **Rincian di tiap grafik**: total, rata-rata, bulan tertinggi, porsi %;
+  tooltip yang menampilkan semua seri per bulan; label nilai tertinggi.
+- **Ringkasan bulan terakhir** di Cash Flow: Cash In/Out/Arus Bersih/jumlah
+  transaksi dibanding bulan sebelumnya (naik/turun %).
+- **GSAP** (`motion.js`): animasi masuk bertahap, grafik tumbuh, angka KPI
+  menghitung naik — hanya saat pindah menu.
+- **three.js** (`authbg.js`): latar 3D halus khusus layar login, dimuat hanya
+  saat dibutuhkan.
+- Semua animasi otomatis **nonaktif** bila perangkat memakai pengaturan
+  *kurangi gerakan*, dan web tetap berfungsi normal bila CDN gagal dimuat.
+
 ## Penyimpanan Cloud (Supabase) — data bersama + login
 
 Secara default aplikasi menyimpan data di browser (localStorage). Untuk
@@ -126,7 +141,8 @@ Secara default aplikasi menyimpan data di browser (localStorage). Untuk
 
 Situs ini statis (HTML/CSS/JS) — cukup diletakkan di folder `public_html`.
 File yang **wajib** diunggah: `index.html`, `styles.css`, `app.js`,
-`charts.js`, `cloud.js`, `supabase-config.js`. (README & `.sql` opsional,
+`charts.js`, `cloud.js`, `supabase-config.js`, `icons.js`, `motion.js`,
+`authbg.js`. (README & `.sql` opsional,
 tidak dipakai saat berjalan.)
 
 **Cara A — File Manager (paling mudah):**
@@ -135,7 +151,7 @@ tidak dipakai saat berjalan.)
 2. hPanel → **File → File Manager → Buka**.
 3. Masuk ke folder **`public_html`**. Hapus file bawaan (mis. `default.php`
    / `index.html` contoh) bila ada.
-4. Klik **Upload**, pilih ke-6 file di atas. Pastikan `index.html` berada
+4. Klik **Upload**, pilih ke-9 file di atas. Pastikan `index.html` berada
    **langsung di dalam `public_html`** (bukan di subfolder).
 5. Buka domain Anda (mis. `https://financelivecraft.id`) — layar login muncul.
 
@@ -170,7 +186,10 @@ python3 -m http.server 8000
 | `index.html` | Struktur halaman & enam menu |
 | `styles.css` | Tampilan / tema hijau-oranye, responsif & dark mode |
 | `app.js` | Logika: CRUD, format Rupiah, filter, agregasi, dashboard, export |
-| `charts.js` | Library grafik SVG mini (bar, area, donut) tanpa dependensi |
+| `charts.js` | Library grafik SVG mini (bar, area, donut) + tooltip |
+| `icons.js` | Set ikon SVG |
+| `motion.js` | Animasi GSAP (masuk, grafik, count-up) |
+| `authbg.js` | Latar 3D three.js untuk layar login |
 | `cloud.js` | Lapisan penyimpanan cloud + login (Supabase) |
 | `supabase-config.js` | Kredensial Supabase (diisi pengguna) |
 | `supabase-setup.sql` | Skrip pembuatan tabel & keamanan di Supabase |

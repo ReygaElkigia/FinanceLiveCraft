@@ -12,23 +12,23 @@
 <body>
   <header class="app-header">
     <div class="brand">
-      <span class="brand-mark">✳</span>
+      <span class="brand-mark" data-icon="sparkle"></span>
       <div>
         <h1>FinanceLiveCraft</h1>
         <p class="subtitle">Pencatatan Cashflow</p>
       </div>
     </div>
     <nav class="nav-tabs" aria-label="Menu utama">
-      <button type="button" class="nav-tab is-active" data-view="cashflow">Cash Flow</button>
-      <button type="button" class="nav-tab" data-view="expense">Expense Log</button>
-      <button type="button" class="nav-tab" data-view="asset">Aset</button>
-      <button type="button" class="nav-tab" data-view="invest">Investasi</button>
-      <button type="button" class="nav-tab" data-view="sales">Sales</button>
-      <button type="button" class="nav-tab" data-view="summary">Summary</button>
+      <button type="button" class="nav-tab is-active" data-view="cashflow"><span class="nav-ico" data-icon="arrow-left-right"></span>Cash Flow</button>
+      <button type="button" class="nav-tab" data-view="expense"><span class="nav-ico" data-icon="receipt"></span>Expense Log</button>
+      <button type="button" class="nav-tab" data-view="asset"><span class="nav-ico" data-icon="package"></span>Aset</button>
+      <button type="button" class="nav-tab" data-view="invest"><span class="nav-ico" data-icon="trending-up"></span>Investasi</button>
+      <button type="button" class="nav-tab" data-view="sales"><span class="nav-ico" data-icon="shopping-bag"></span>Sales</button>
+      <button type="button" class="nav-tab" data-view="summary"><span class="nav-ico" data-icon="dashboard"></span>Summary</button>
     </nav>
     <div id="userBox" class="user-box" hidden>
       <span id="userEmail" class="user-email"></span>
-      <button id="logoutBtn" class="btn btn-ghost btn-sm" type="button">Keluar</button>
+      <button id="logoutBtn" class="btn btn-ghost btn-sm" type="button"><span data-icon="log-out"></span>Keluar</button>
     </div>
   </header>
 
@@ -36,7 +36,7 @@
   <div id="authGate" class="auth-gate" hidden>
     <div class="auth-card">
       <div class="auth-brand">
-        <span class="brand-mark">✳</span>
+        <span class="brand-mark" data-icon="sparkle"></span>
         <div>
           <h1>FinanceLiveCraft</h1>
           <p class="subtitle">Pencatatan Cashflow</p>
@@ -71,7 +71,7 @@
       <!-- Saldo per akun -->
       <section class="summary wallet-summary">
         <div class="card wallet-card card-live">
-          <span class="card-icon" aria-hidden="true">◈</span>
+          <span class="card-icon" aria-hidden="true" data-icon="wallet"></span>
           <div class="card-body">
             <span class="card-label">Saldo Livecraft</span>
             <span class="card-value" id="liveSaldo">Rp0</span>
@@ -79,7 +79,7 @@
           </div>
         </div>
         <div class="card wallet-card card-keranjang">
-          <span class="card-icon" aria-hidden="true">🧺</span>
+          <span class="card-icon" aria-hidden="true" data-icon="basket"></span>
           <div class="card-body">
             <span class="card-label">Saldo Keranjang</span>
             <span class="card-value" id="keranjangSaldo">Rp0</span>
@@ -91,34 +91,37 @@
       <!-- Total keseluruhan -->
       <section class="summary" id="summary">
         <div class="card card-in">
-          <span class="card-icon" aria-hidden="true">↓</span>
+          <span class="card-icon" aria-hidden="true" data-icon="arrow-in"></span>
           <div class="card-body">
             <span class="card-label">Total Cash In</span>
             <span class="card-value" id="totalIn">Rp0</span>
           </div>
         </div>
         <div class="card card-out">
-          <span class="card-icon" aria-hidden="true">↑</span>
+          <span class="card-icon" aria-hidden="true" data-icon="arrow-out"></span>
           <div class="card-body">
             <span class="card-label">Total Cash Out</span>
             <span class="card-value" id="totalOut">Rp0</span>
           </div>
         </div>
         <div class="card card-balance">
-          <span class="card-icon" aria-hidden="true">≈</span>
+          <span class="card-icon" aria-hidden="true" data-icon="scale"></span>
           <div class="card-body">
             <span class="card-label">Total Saldo (Balance)</span>
             <span class="card-value" id="balance">Rp0</span>
           </div>
         </div>
         <div class="card card-count">
-          <span class="card-icon" aria-hidden="true">#</span>
+          <span class="card-icon" aria-hidden="true" data-icon="receipt"></span>
           <div class="card-body">
             <span class="card-label">Jumlah Transaksi</span>
             <span class="card-value" id="txCount">0</span>
           </div>
         </div>
       </section>
+
+      <!-- Ringkasan bulan terakhir vs bulan sebelumnya -->
+      <section class="panel insight-panel" id="cfInsight" hidden></section>
 
       <!-- Saldo Awal -->
       <section class="panel opening-panel">
@@ -305,21 +308,21 @@
       <!-- Summary cards -->
       <section class="summary summary-3" id="assetSummary">
         <div class="card card-balance">
-          <span class="card-icon" aria-hidden="true">◆</span>
+          <span class="card-icon" aria-hidden="true" data-icon="package"></span>
           <div class="card-body">
             <span class="card-label">Total Aset</span>
             <span class="card-value" id="assetTotal">Rp0</span>
           </div>
         </div>
         <div class="card card-count">
-          <span class="card-icon" aria-hidden="true">#</span>
+          <span class="card-icon" aria-hidden="true" data-icon="layers"></span>
           <div class="card-body">
             <span class="card-label">Jumlah Item</span>
             <span class="card-value" id="assetCount">0</span>
           </div>
         </div>
         <div class="card card-out">
-          <span class="card-icon" aria-hidden="true">↻</span>
+          <span class="card-icon" aria-hidden="true" data-icon="credit-card"></span>
           <div class="card-body">
             <span class="card-label">Total Hutang</span>
             <span class="card-value" id="assetDebt">Rp0</span>
@@ -457,21 +460,21 @@
 
       <section class="summary summary-3">
         <div class="card card-in">
-          <span class="card-icon" aria-hidden="true">↑</span>
+          <span class="card-icon" aria-hidden="true" data-icon="trending-up"></span>
           <div class="card-body">
             <span class="card-label">Total Setoran</span>
             <span class="card-value" id="investIn">Rp0</span>
           </div>
         </div>
         <div class="card card-out">
-          <span class="card-icon" aria-hidden="true">↓</span>
+          <span class="card-icon" aria-hidden="true" data-icon="trending-down"></span>
           <div class="card-body">
             <span class="card-label">Total Penarikan</span>
             <span class="card-value" id="investOut">Rp0</span>
           </div>
         </div>
         <div class="card card-balance">
-          <span class="card-icon" aria-hidden="true">◆</span>
+          <span class="card-icon" aria-hidden="true" data-icon="gem"></span>
           <div class="card-body">
             <span class="card-label">Modal Tertanam (Bersih)</span>
             <span class="card-value" id="investNet">Rp0</span>
@@ -605,7 +608,11 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="supabase-config.js"></script>
   <script src="cloud.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="icons.js"></script>
   <script src="charts.js"></script>
+  <script src="motion.js"></script>
+  <script src="authbg.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
