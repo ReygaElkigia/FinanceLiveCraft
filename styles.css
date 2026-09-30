@@ -851,9 +851,10 @@ tfoot td {
   font-size: 0.78rem;
   padding-top: 0.6rem;
   padding-bottom: 0.6rem;
-  position: sticky;
-  left: 0;
+  overflow: visible;
 }
+/* The cell spans the whole table, so pin the title text itself */
+.exp-group-title { position: sticky; left: 0.6rem; display: inline-block; }
 .exp-total-col {
   font-weight: 700;
   border-left: 2px solid var(--line);
@@ -870,6 +871,43 @@ tfoot td {
 @media (prefers-color-scheme: dark) {
   .exp-grand td { background: #b9820f !important; color: #fff !important; }
   .exp-grand .exp-cat, .exp-grand .col-num { color: #fff !important; }
+}
+
+/* Rows recorded but NOT counted (e.g. GO Gaji Owner) — violet, dashed */
+:root { --excl: #6a49b0; --excl-bg: #f4f0fb; --excl-line: rgba(122, 90, 190, 0.35); }
+@media (prefers-color-scheme: dark) {
+  :root { --excl: #b39ae8; --excl-bg: #1f1a2b; --excl-line: rgba(179, 154, 232, 0.35); }
+}
+.badge-excluded { background: var(--excl-bg); color: var(--excl); border: 1px dashed var(--excl-line); }
+.exp-tag {
+  display: inline-block;
+  margin-left: 0.35rem;
+  padding: 0.08rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  color: var(--excl);
+  border: 1px dashed var(--excl-line);
+  vertical-align: middle;
+}
+.expense-table .exp-excluded td { background: var(--excl-bg) !important; border-bottom-style: dashed; }
+.expense-table .exp-excluded .col-num,
+.expense-table .exp-excluded .exp-total-col { color: var(--excl) !important; font-style: italic; }
+.expense-table .exp-excluded .exp-cat { color: var(--excl); white-space: normal; line-height: 1.35; }
+.expense-table .exp-excluded .exp-tag { margin: 0.25rem 0 0; display: table; }
+.tx-excluded td { background: var(--excl-bg); }
+.tx-excluded .col-num { color: var(--excl) !important; }
+.tx-excluded .col-desc::after {
+  content: "tidak dihitung sbg beban";
+  margin-left: 0.45rem;
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: var(--excl);
+  border: 1px dashed var(--excl-line);
+  white-space: nowrap;
 }
 
 /* Sales Log: income figures shown in green, grand total row in green */

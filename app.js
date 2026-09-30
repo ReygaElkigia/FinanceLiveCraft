@@ -51,6 +51,7 @@
         { code: "GA",  label: "Gaji Admin & Co Host" },
         { code: "GCC", label: "Gaji Content Creator" },
         { code: "GH",  label: "Gaji / Honor Live Streamer" },
+        { code: "GO",  label: "Gaji Owner", excluded: true },
         { code: "SHM", label: "Investasi" }
       ]
     },
@@ -105,10 +106,15 @@
   // Kumpulan kode per menu (agar total baris & total kolom selalu konsisten).
   function flattenCodes(groups) {
     var out = [];
-    groups.forEach(function (g) { g.rows.forEach(function (r) { out.push(r.code); }); });
+    // Baris "excluded" (mis. GO) tetap ditampilkan tapi tidak ikut dijumlahkan.
+    groups.forEach(function (g) { g.rows.forEach(function (r) { if (!r.excluded) out.push(r.code); }); });
     return out;
   }
   var EXPENSE_CODES = flattenCodes(EXPENSE_GROUPS);
+  var EXCLUDED_EXPENSE_CODES = [];
+  EXPENSE_GROUPS.forEach(function (g) {
+    g.rows.forEach(function (r) { if (r.excluded) EXCLUDED_EXPENSE_CODES.push(r.code); });
+  });
   var SALES_CODES = flattenCodes(SALES_GROUPS);
 
   // Pembagian laba bersih (Profit Log Person) — bisa diubah pengguna.
@@ -473,7 +479,12 @@
       var tdCode = document.createElement("td");
       tdCode.setAttribute("data-label", "Kode");
       var badge = document.createElement("span");
-      badge.className = "badge";
+      var isExcluded = EXCLUDED_EXPENSE_CODES.indexOf(t.kode) !== -1;
+      badge.className = "badge" + (isExcluded ? " badge-excluded" : "");
+      if (isExcluded) {
+        tr.classList.add("tx-excluded");
+        tr.title = "Gaji Owner — tercatat di Cash Flow, tidak dihitung sebagai beban";
+      }
       badge.textContent = t.kode;
       tdCode.appendChild(badge);
 
@@ -816,12 +827,13 @@
 
     html += "<tbody>";
     groups.forEach(function (group) {
-      html += '<tr class="exp-group"><td colspan="14">' + group.title + "</td></tr>";
+      html += '<tr class="exp-group"><td colspan="14"><span class="exp-group-title">' + group.title + "</span></td></tr>";
       group.rows.forEach(function (row) {
         var vals = matrix[row.code] || new Array(12).fill(0);
         var rowTotal = vals.reduce(function (a, b) { return a + b; }, 0);
-        html += "<tr>";
-        html += '<td class="exp-cat"><span class="badge">' + row.code + "</span> " + escapeHtml(row.label) + "</td>";
+        html += row.excluded ? '<tr class="exp-excluded" title="Dicatat saja — tidak dihitung dalam total">' : "<tr>";
+        html += '<td class="exp-cat"><span class="badge' + (row.excluded ? " badge-excluded" : "") + '">' + row.code + "</span> " +
+          escapeHtml(row.label) + (row.excluded ? ' <span class="exp-tag">tidak dihitung</span>' : "") + "</td>";
         for (var m = 0; m < 12; m++) {
           html += '<td class="col-num">' + cell(vals[m]) + "</td>";
         }
@@ -899,7 +911,7 @@
       group.rows.forEach(function (row) {
         var vals = matrix[row.code] || new Array(12).fill(0);
         var rowTotal = vals.reduce(function (a, b) { return a + b; }, 0);
-        lines.push(['"' + row.label + '"', row.code].concat(vals).concat([rowTotal]).join(","));
+        lines.push(['"' + row.label + (row.excluded ? " (tidak dihitung)" : "") + '"', row.code].concat(vals).concat([rowTotal]).join(","));
       });
     });
     var grand = monthTotals.reduce(function (a, b) { return a + b; }, 0);
@@ -1427,7 +1439,7 @@
       group.rows.forEach(function (row) {
         var vals = matrix[row.code] || new Array(12).fill(0);
         var rowTotal = vals.reduce(function (a, b) { return a + b; }, 0);
-        lines.push(['"' + row.label + '"', row.code].concat(vals).concat([rowTotal]).join(","));
+        lines.push(['"' + row.label + (row.excluded ? " (tidak dihitung)" : "") + '"', row.code].concat(vals).concat([rowTotal]).join(","));
       });
     });
     var grand = monthTotals.reduce(function (a, b) { return a + b; }, 0);
