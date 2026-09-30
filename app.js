@@ -1547,6 +1547,10 @@
     { code: "GCC", label: "Beban Editor / CC" }
   ];
 
+  // Kode yang tidak ditampilkan & tidak dihitung di Summary. Ads sudah
+  // dianggarkan lewat Est hitungan (Ads % dari Laba kotor).
+  var SHEET_HIDDEN = ["ADS"];
+
   function populatePeriods() {
     if (el.summaryPeriod.options.length) return;
     var o = document.createElement("option");
@@ -1592,7 +1596,7 @@
     var notes = [];
     EXPENSE_GROUPS.forEach(function (g) {
       g.rows.forEach(function (r) {
-        if (fixedOut.indexOf(r.code) !== -1 || !ps.out[r.code]) return;
+        if (fixedOut.indexOf(r.code) !== -1 || SHEET_HIDDEN.indexOf(r.code) !== -1 || !ps.out[r.code]) return;
         var label = /^beban/i.test(r.label) ? r.label : "Beban " + r.label;
         (r.excluded ? notes : beban).push({ code: r.code, label: label, v: ps.out[r.code] });
       });

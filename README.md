@@ -80,7 +80,9 @@ otomatis dari Cash Flow (pilih tahun + periode Setahun / per bulan):
   - Beban Host Livecraft (GH), Host Mamah Salma (HMS), Sheila (SHL), Admin
     (GA), Editor / CC (GCC) (nominal disorot kuning seperti di spreadsheet) →
     **Total Rugi**. Kode beban lain ikut tampil bila ada nilainya; Gaji Owner
-    (GO) tampil ungu dan tidak dihitung.
+    (GO) tampil ungu dan tidak dihitung. Beban Ads (ADS) tidak ditampilkan &
+    tidak dihitung di Summary karena sudah dianggarkan lewat Est hitungan
+    (tetap tercatat di Cash Flow & Expense Log).
   - **Total Laba bersih** = Total Laba kotor − Total Rugi.
 - **Est hitungan** (dari Total Laba kotor): Beban operasional 40%, Cash
   pegangan 5%, SHU 5%, Ads 35%, Gaji 15%, Total, dan **Esti gaji perorang**
