@@ -67,24 +67,22 @@ Aplikasi punya enam menu: **Cash Flow**, **Expense Log**, **Aset**,
   (Total Pendapatan, rata-rata, bulan tertinggi), dan Export CSV.
 
 ### 6. Summary
-- **Laba Rugi** (format *Hitungan LC*): rincian pendapatan per sumber, beban per
-  pos, Total Laba Kotor, Total Beban, Laba Bersih + margin, dan % tiap baris
-  terhadap laba kotor. Bisa per bulan atau setahun. Gaji Owner tampil sebagai
-  catatan (tidak dihitung).
-- **Estimasi Alokasi Laba Kotor**: Beban operasional 40%, Cash pegangan 5%,
-  SHU 5%, Ads 35%, Gaji 15% + estimasi gaji per orang (Gaji ÷ 3). Pos, persen,
-  dan jumlah orang bisa diubah lewat **Atur Alokasi**.
-- **Otomatis** dihitung dari menu **Sales** & **Expense** (per bulan, per tahun):
-  - **Sales Log (Laba kotor)** — pendapatan
-  - **Expense Log (Beban)** — pengeluaran
-  - **Profit Log (Laba bersih)** — Pendapatan − Beban
-  - **Profit Log Person** — pembagian laba bersih. Porsi & nama bisa
-    **diubah langsung dari UI** (tombol **Atur Pembagian**): tambah/hapus
-    orang, ubah persen (indikator total 100% live), simpan — tersimpan di
-    localStorage dan tabel + donut ikut menyesuaikan. Default: Wiliam 20%,
-    Reyga 20%, Kevin 20%, Investment 30%, Ads 10%.
-- Kartu ringkasan tahunan (Total Pendapatan, Total Beban, Laba Bersih),
-  selektor tahun, dan Export CSV.
+Tampilan satu lembar persis seperti spreadsheet **Hitungan LC**, dihitung
+otomatis dari Cash Flow (pilih tahun + periode Setahun / per bulan):
+- **Laba Rugi**
+  - Income Paket LC (PLC), Income Komisi RB & SK (KRS), Income Komisi Mamah
+    Salma (KMS) → **Total Laba kotor**. Kode pendapatan lain (DP, SOA, HTB)
+    ikut tampil bila ada nilainya.
+  - Beban Host Livecraft (GH), Host Mamah Salma (HMS), Sheila (SHL), Admin
+    (GA), Editor / CC (GCC) (nominal disorot kuning seperti di spreadsheet) →
+    **Total Rugi**. Kode beban lain ikut tampil bila ada nilainya; Gaji Owner
+    (GO) tampil ungu dan tidak dihitung.
+  - **Total Laba bersih** = Total Laba kotor − Total Rugi.
+- **Est hitungan** (dari Total Laba kotor): Beban operasional 40%, Cash
+  pegangan 5%, SHU 5%, Ads 35%, Gaji 15%, Total, dan **Esti gaji perorang**
+  (Gaji ÷ 3). Pos, persen, dan jumlah orang bisa diubah lewat
+  **Atur Est. Hitungan**.
+- **Export CSV** menghasilkan lembar yang sama.
 
 ## Grafik Dashboard
 
@@ -97,7 +95,6 @@ Setiap menu punya grafik yang otomatis mengikuti datanya:
 | Aset | Komposisi aset per pembayaran (donut) + nilai aset per bulan (bar) |
 | Investasi | Saldo berjalan (area) + setoran vs penarikan per bulan (bar) |
 | Sales | Pendapatan per bulan (bar) + pendapatan per kategori (bar) |
-| Summary | Pendapatan · Beban · Laba per bulan (bar) + pembagian laba (donut) |
 
 Grafik digambar sebagai **SVG murni** (`charts.js`, tanpa library eksternal),
 warnanya mengikuti palet kategorikal yang sudah divalidasi aman untuk buta warna,

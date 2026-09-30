@@ -7,7 +7,6 @@
   var STORAGE_KEY = "financelivecraft.transactions.v1";
   var ASSET_KEY = "financelivecraft.assets.v1";
   var EMERGENCY_KEY = "financelivecraft.emergency.v1";
-  var SHARES_KEY = "financelivecraft.profitshares.v1";
   var OPENING_KEY = "financelivecraft.opening.v1";
 
   var MONTHS_FULL = ["Januari","Februari","Maret","April","Mei","Juni","Juli",
@@ -131,31 +130,6 @@
     g.rows.forEach(function (r) { if (r.excluded) EXCLUDED_EXPENSE_CODES.push(r.code); });
   });
   var SALES_CODES = flattenCodes(SALES_GROUPS);
-
-  // Pembagian laba bersih (Profit Log Person) — bisa diubah pengguna.
-  var DEFAULT_SHARES = [
-    { name: "Wiliam",     pct: 0.20 },
-    { name: "Reyga",      pct: 0.20 },
-    { name: "Kevin",      pct: 0.20 },
-    { name: "Investment", pct: 0.30 },
-    { name: "Ads",        pct: 0.10 }
-  ];
-  function loadShares() {
-    try {
-      var raw = localStorage.getItem(SHARES_KEY);
-      if (raw) {
-        var p = JSON.parse(raw);
-        if (Array.isArray(p) && p.length) return p;
-      }
-    } catch (e) {}
-    return DEFAULT_SHARES.map(function (s) { return { name: s.name, pct: s.pct }; });
-  }
-  function persistShares() {
-    if (useCloud) { window.Cloud.saveDoc("profitshares", PROFIT_SHARES).catch(cloudError); return; }
-    try { localStorage.setItem(SHARES_KEY, JSON.stringify(PROFIT_SHARES)); }
-    catch (e) { alert("Gagal menyimpan pembagian laba."); }
-  }
-  var PROFIT_SHARES = loadShares();
 
   // Saldo awal (modal awal) per akun.
   function normalizeOpening(d) {
@@ -326,23 +300,11 @@
     // Summary
     viewSummary: document.getElementById("view-summary"),
     summaryYear: document.getElementById("summaryYear"),
-    summaryWrap: document.getElementById("summaryWrap"),
-    summaryCards: document.getElementById("summaryCards"),
-    summaryEmpty: document.getElementById("summaryEmpty"),
-    exportSummaryBtn: document.getElementById("exportSummaryBtn"),
     // Pembagian laba
-    profitSharesBtn: document.getElementById("profitSharesBtn"),
-    sharesEditor: document.getElementById("sharesEditor"),
-    sharesRows: document.getElementById("sharesRows"),
-    sharesTotal: document.getElementById("sharesTotal"),
-    sharesAdd: document.getElementById("sharesAdd"),
-    sharesSave: document.getElementById("sharesSave"),
-    sharesCancel: document.getElementById("sharesCancel"),
-    sharesResetDefault: document.getElementById("sharesResetDefault"),
     // Laba Rugi + Alokasi
     summaryPeriod: document.getElementById("summaryPeriod"),
-    plBody: document.getElementById("plBody"),
-    allocBody: document.getElementById("allocBody"),
+    lcSheet: document.getElementById("lcSheet"),
+    exportSheetBtn: document.getElementById("exportSheetBtn"),
     allocEditBtn: document.getElementById("allocEditBtn"),
     allocEditor: document.getElementById("allocEditor"),
     allocRows: document.getElementById("allocRows"),
@@ -1559,112 +1521,28 @@
     }
   }
 
-  // Satu tabel ringkasan: baris berlabel, kolom bulan + total.
-  function buildSummaryTable(headerClass, title, rows) {
-    var html = '<table class="expense-table summary-table">';
-    html += MATRIX_COLGROUP;
-    html += '<thead><tr class="' + headerClass + '">';
-    html += '<th class="exp-cat">' + escapeHtml(title) + "</th>";
-    MONTHS_SHORT.forEach(function (m) { html += '<th class="col-num">' + m + "</th>"; });
-    html += '<th class="col-num exp-total-col">Total</th>';
-    html += "</tr></thead><tbody>";
-    rows.forEach(function (r) {
-      var rowTotal = r.values.reduce(function (a, b) { return a + b; }, 0);
-      html += "<tr>";
-      html += '<td class="exp-cat">' + escapeHtml(r.label) + "</td>";
-      for (var m = 0; m < 12; m++) html += '<td class="col-num">' + cell(r.values[m]) + "</td>";
-      html += '<td class="col-num exp-total-col">' + cell(rowTotal) + "</td>";
-      html += "</tr>";
-    });
-    html += "</tbody></table>";
-    return '<section class="panel table-panel sum-panel"><div class="table-wrap">' + html + "</div></section>";
-  }
-
-  function computeSummary(year) {
-    var sales = monthTotalsOf(computeSalesMatrix(year), SALES_CODES);
-    var expense = monthTotalsOf(computeExpenseMatrix(year), EXPENSE_CODES);
-    var profit = sales.map(function (s, i) { return s - expense[i]; });
-    return { sales: sales, expense: expense, profit: profit };
-  }
-
   function renderSummary() {
     populateSummaryYears();
     var year = el.summaryYear.value || String(new Date().getFullYear());
-    var s = computeSummary(year);
-
-    var sum = function (a) { return a.reduce(function (x, y) { return x + y; }, 0); };
-    var grandSales = sum(s.sales), grandExp = sum(s.expense), grandProfit = grandSales - grandExp;
-
-    if (grandSales === 0 && grandExp === 0) {
-      el.summaryWrap.innerHTML = "";
-      el.summaryEmpty.hidden = false;
-      el.summaryCards.innerHTML = "";
-      if (window.Charts) renderSummaryCharts(s, grandProfit);
-      renderPL(year);
-      return;
-    }
-    el.summaryEmpty.hidden = true;
-
-    var personRows = PROFIT_SHARES.map(function (p) {
-      return {
-        label: p.name + " (" + Math.round(p.pct * 100) + "%)",
-        values: s.profit.map(function (v) { return v * p.pct; })
-      };
-    });
-
-    el.summaryWrap.innerHTML =
-      buildSummaryTable("sum-head-sales", "Sales Log ( Laba kotor )", [{ label: "INTHEBOX", values: s.sales }]) +
-      buildSummaryTable("sum-head-expense", "Expense Log ( Beban )", [{ label: "INTHEBOX Expense", values: s.expense }]) +
-      buildSummaryTable("sum-head-profit", "Profit Log ( Laba bersih )", [{ label: "INTHEBOX", values: s.profit }]) +
-      buildSummaryTable("sum-head-profit", "Profit Log Person", personRows);
-
-    var cards = [
-      { label: "Total Pendapatan (Tahun)", value: formatRupiah(grandSales), cls: "card-in" },
-      { label: "Total Beban (Tahun)", value: formatRupiah(grandExp), cls: "card-out" },
-      { label: "Laba Bersih (Tahun)", value: formatRupiah(grandProfit), cls: "card-balance" }
-    ];
-    el.summaryCards.innerHTML = cards.map(function (c) {
-      return '<div class="card ' + c.cls + '"><div class="card-body">' +
-        '<span class="card-label">' + c.label + "</span>" +
-        '<span class="card-value">' + c.value + "</span></div></div>";
-    }).join("");
-
-    if (window.Charts) renderSummaryCharts(s, grandProfit);
-    renderPL(year);
+    renderSheet(year);
   }
 
-  function exportSummaryCSV() {
-    var year = el.summaryYear.value || String(new Date().getFullYear());
-    var s = computeSummary(year);
-    var sum = function (a) { return a.reduce(function (x, y) { return x + y; }, 0); };
-    if (sum(s.sales) === 0 && sum(s.expense) === 0) {
-      alert("Tidak ada data untuk diekspor pada tahun " + year + ".");
-      return;
-    }
+  // ---- Lembar "Hitungan LC" (Laba Rugi + Est hitungan) ----
+  // Baris tetap mengikuti spreadsheet Hitungan LC; kode lain hanya muncul
+  // bila ada nilainya pada periode terpilih.
+  var SHEET_INCOME = [
+    { code: "PLC", label: "Income Paket LC" },
+    { code: "KRS", label: "Income Komisi RB & SK" },
+    { code: "KMS", label: "Income Komisi Mamah Salma" }
+  ];
+  var SHEET_BEBAN = [
+    { code: "GH",  label: "Beban Host Livecraft" },
+    { code: "HMS", label: "Beban Host Mamah Salma" },
+    { code: "SHL", label: "Beban Sheila" },
+    { code: "GA",  label: "Beban Admin" },
+    { code: "GCC", label: "Beban Editor / CC" }
+  ];
 
-    var lines = [["Bagian", "Item"].concat(MONTHS_SHORT).concat(["Total"]).join(",")];
-    function pushRow(section, label, values) {
-      lines.push(['"' + section + '"', '"' + label + '"'].concat(values.map(function (v) { return Math.round(v); })).concat([Math.round(sum(values))]).join(","));
-    }
-    pushRow("Sales Log (Laba kotor)", "INTHEBOX", s.sales);
-    pushRow("Expense Log (Beban)", "INTHEBOX Expense", s.expense);
-    pushRow("Profit Log (Laba bersih)", "INTHEBOX", s.profit);
-    PROFIT_SHARES.forEach(function (p) {
-      pushRow("Profit Log Person", p.name + " (" + Math.round(p.pct * 100) + "%)", s.profit.map(function (v) { return v * p.pct; }));
-    });
-
-    var blob = new Blob(["﻿" + lines.join("\r\n")], { type: "text/csv;charset=utf-8;" });
-    var url = URL.createObjectURL(blob);
-    var link = document.createElement("a");
-    link.href = url;
-    link.download = "summary-" + year + ".csv";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  }
-
-  // ---- Laba Rugi + Estimasi Alokasi (format "Hitungan LC") ----
   function populatePeriods() {
     if (el.summaryPeriod.options.length) return;
     var o = document.createElement("option");
@@ -1686,92 +1564,128 @@
     });
     return { inc: inc, out: out };
   }
-  function pctText(part, whole) {
-    return whole ? (part / whole * 100).toFixed(1).replace(".", ",") + "%" : "";
-  }
-  function plRow(code, label, amount, base, cls, tag) {
-    return '<div class="pl-row' + (cls ? " " + cls : "") + '">' +
-      '<span class="pl-name">' + (code ? '<span class="badge' + (cls === "pl-note" ? " badge-excluded" : "") + '">' + code + "</span>" : "") +
-      escapeHtml(label) + (tag ? ' <span class="exp-tag">' + tag + "</span>" : "") + "</span>" +
-      '<span class="pl-pct">' + pctText(amount, base) + "</span>" +
-      '<span class="pl-amt">' + formatRupiah(amount) + "</span></div>";
+  function pctLabel(p) {
+    return String(Math.round(p * 1000) / 10).replace(".", ",") + "%";
   }
 
-  function renderPL(year) {
+  function computeSheet(year) {
     populatePeriods();
     var month = el.summaryPeriod.value === "" ? -1 : parseInt(el.summaryPeriod.value, 10);
-    var periodLabel = (month >= 0 ? MONTHS_FULL[month] + " " : "Tahun ") + year;
     var ps = periodSums(year, month);
+    var fixedIn = SHEET_INCOME.map(function (r) { return r.code; });
+    var fixedOut = SHEET_BEBAN.map(function (r) { return r.code; });
 
-    var incRows = [], expRows = [], noteRows = [];
+    var income = SHEET_INCOME.map(function (r) { return { code: r.code, label: r.label, v: ps.inc[r.code] || 0 }; });
     SALES_GROUPS.forEach(function (g) {
       var nonOp = g.title.indexOf("Non-Sales") !== -1;
       g.rows.forEach(function (r) {
-        var v = ps.inc[r.code] || 0;
-        if (v) incRows.push({ code: r.code, label: r.label, v: v, tag: nonOp ? "non-usaha" : "" });
+        if (fixedIn.indexOf(r.code) !== -1 || !ps.inc[r.code]) return;
+        income.push({ code: r.code, label: "Income " + r.label, v: ps.inc[r.code], tag: nonOp ? "non-usaha" : "" });
       });
     });
+
+    var beban = SHEET_BEBAN.map(function (r) { return { code: r.code, label: r.label, v: ps.out[r.code] || 0 }; });
+    var notes = [];
     EXPENSE_GROUPS.forEach(function (g) {
       g.rows.forEach(function (r) {
-        var v = ps.out[r.code] || 0;
-        if (!v) return;
-        (r.excluded ? noteRows : expRows).push({ code: r.code, label: r.label, v: v });
+        if (fixedOut.indexOf(r.code) !== -1 || !ps.out[r.code]) return;
+        var label = /^beban/i.test(r.label) ? r.label : "Beban " + r.label;
+        (r.excluded ? notes : beban).push({ code: r.code, label: label, v: ps.out[r.code] });
       });
     });
-    var kotor = incRows.reduce(function (a, r) { return a + r.v; }, 0);
-    var beban = expRows.reduce(function (a, r) { return a + r.v; }, 0);
-    var bersih = kotor - beban;
 
-    if (!incRows.length && !expRows.length && !noteRows.length) {
-      el.plBody.innerHTML = '<p class="chart-empty">Belum ada transaksi pada ' + escapeHtml(periodLabel) + ".</p>";
-    } else {
-      var h = '<p class="pl-period">Periode: <b>' + escapeHtml(periodLabel) + "</b> · % terhadap Laba Kotor</p>";
-      h += '<div class="pl-sec">Pendapatan</div>';
-      h += incRows.length ? incRows.map(function (r) { return plRow(r.code, r.label, r.v, kotor, "", r.tag); }).join("")
-        : '<div class="pl-row pl-empty"><span class="pl-name">Tidak ada pendapatan</span><span></span><span></span></div>';
-      h += plRow("", "Total Laba Kotor", kotor, 0, "pl-subtotal pos-total");
-      h += '<div class="pl-sec">Beban</div>';
-      h += expRows.length ? expRows.map(function (r) { return plRow(r.code, r.label, r.v, kotor); }).join("")
-        : '<div class="pl-row pl-empty"><span class="pl-name">Tidak ada beban</span><span></span><span></span></div>';
-      h += plRow("", "Total Beban (Rugi)", beban, kotor, "pl-subtotal neg-total");
-      h += '<div class="pl-net ' + (bersih >= 0 ? "good" : "bad") + '"><span>Laba Bersih</span>' +
-        '<span class="pl-margin">Margin ' + (pctText(bersih, kotor) || "–") + "</span>" +
-        "<b>" + formatRupiah(bersih) + "</b></div>";
-      if (noteRows.length) {
-        h += '<div class="pl-sec pl-sec-note">Catatan (tidak dihitung)</div>';
-        h += noteRows.map(function (r) { return plRow(r.code, r.label, r.v, 0, "pl-note"); }).join("");
-      }
-      el.plBody.innerHTML = h;
-    }
-    renderAllocation(kotor, periodLabel);
+    var kotor = income.reduce(function (a, r) { return a + r.v; }, 0);
+    var rugi = beban.reduce(function (a, r) { return a + r.v; }, 0);
+    var est = allocation.items.map(function (it) { return { name: it.name, pct: it.pct, v: kotor * it.pct }; });
+    var estPct = est.reduce(function (a, e) { return a + e.pct; }, 0);
+    var gaji = null;
+    est.forEach(function (e) { if (gaji === null && /gaji/i.test(e.name)) gaji = e.v; });
+    return {
+      periodLabel: (month >= 0 ? MONTHS_FULL[month] + " " : "Tahun ") + year,
+      income: income, beban: beban, notes: notes,
+      kotor: kotor, rugi: rugi, bersih: kotor - rugi,
+      est: est, estPct: estPct, estTotal: kotor * estPct,
+      gaji: gaji, persons: allocation.persons,
+      empty: !Object.keys(ps.inc).length && !Object.keys(ps.out).length
+    };
   }
 
-  function renderAllocation(kotor, periodLabel) {
-    var totalPct = allocation.items.reduce(function (a, i) { return a + i.pct; }, 0);
-    var h = '<p class="pl-period">Dasar: <b>Laba Kotor ' + formatRupiah(kotor) + "</b> · " + escapeHtml(periodLabel) + "</p>";
-    var gaji = null;
-    allocation.items.forEach(function (it, i) {
-      var amt = kotor * it.pct;
-      if (/gaji/i.test(it.name) && gaji === null) gaji = amt;
-      h += '<div class="alloc-row">' +
-        '<div class="alloc-top"><span class="alloc-name"><span class="chart-swatch" style="background:var(' +
-        PALETTE[i % PALETTE.length] + ')"></span>' + escapeHtml(it.name) + "</span>" +
-        '<span class="pl-pct">' + (Math.round(it.pct * 1000) / 10).toString().replace(".", ",") + "%</span>" +
-        '<span class="pl-amt">' + formatRupiah(amt) + "</span></div>" +
-        '<div class="alloc-bar"><span style="width:' + Math.min(100, it.pct * 100) + "%;background:var(" +
-        PALETTE[i % PALETTE.length] + ')"></span></div></div>';
-    });
-    var ok = Math.abs(totalPct - 1) < 0.0005;
-    h += '<div class="pl-row pl-subtotal"><span class="pl-name">Total</span><span class="pl-pct' + (ok ? "" : " warn") + '">' +
-      (Math.round(totalPct * 1000) / 10).toString().replace(".", ",") + "%</span><span class=\"pl-amt\">" +
-      formatRupiah(kotor * totalPct) + "</span></div>";
-    if (!ok) h += '<p class="alloc-warn">Total persentase belum 100%.</p>';
-    if (gaji !== null) {
-      h += '<div class="pl-net good alloc-person"><span>Estimasi gaji per orang</span>' +
-        '<span class="pl-margin">Gaji ÷ ' + allocation.persons + " orang</span><b>" +
-        formatRupiah(gaji / allocation.persons) + "</b></div>";
+  function renderSheet(year) {
+    var d = computeSheet(year);
+    function label(r) {
+      return '<td class="lc-label">' + escapeHtml(r.label) +
+        (r.code ? ' <span class="lc-code">' + r.code + "</span>" : "") +
+        (r.tag ? ' <span class="exp-tag">' + r.tag + "</span>" : "") + "</td>";
     }
-    el.allocBody.innerHTML = h;
+    function money(v, cls) { return '<td class="lc-num' + (cls ? " " + cls : "") + '">' + formatRupiah(v) + "</td>"; }
+    var gap = '<tr class="lc-gap"><td colspan="3"></td></tr>';
+
+    var h = '<table class="lc-table">' +
+      '<colgroup><col class="lc-c-label" /><col class="lc-c-mid" /><col class="lc-c-tot" /></colgroup><tbody>';
+    h += '<tr class="lc-title"><th colspan="3" scope="colgroup">Laba Rugi' +
+      '<span class="lc-period">' + escapeHtml(d.periodLabel) + "</span></th></tr>";
+    if (d.empty) h += '<tr class="lc-hint"><td colspan="3">Belum ada transaksi pada periode ini.</td></tr>';
+    d.income.forEach(function (r) { h += "<tr>" + label(r) + money(r.v) + "<td></td></tr>"; });
+    h += '<tr class="lc-total"><td class="lc-label">Total Laba kotor</td><td></td>' + money(d.kotor) + "</tr>";
+    h += gap;
+    d.beban.forEach(function (r) { h += "<tr>" + label(r) + money(r.v, "lc-hl") + "<td></td></tr>"; });
+    d.notes.forEach(function (r) {
+      h += '<tr class="lc-excl">' + label({ code: r.code, label: r.label, tag: "tidak dihitung" }) +
+        money(r.v) + "<td></td></tr>";
+    });
+    h += '<tr class="lc-total"><td class="lc-label">Total Rugi</td><td></td>' + money(d.rugi) + "</tr>";
+    h += gap;
+    h += '<tr class="lc-total lc-net ' + (d.bersih >= 0 ? "good" : "bad") + '"><td class="lc-label">Total Laba bersih</td><td></td>' +
+      money(d.bersih) + "</tr>";
+
+    h += '<tr class="lc-gap lc-gap-lg"><td colspan="3"></td></tr>';
+    h += '<tr class="lc-title"><th colspan="3" scope="colgroup">Est hitungan' +
+      '<span class="lc-period">dari Total Laba kotor</span></th></tr>';
+    d.est.forEach(function (e) {
+      h += '<tr><td class="lc-label">' + escapeHtml(e.name) + '</td><td class="lc-num lc-pct">' + pctLabel(e.pct) + "</td>" +
+        money(e.v) + "</tr>";
+    });
+    var ok = Math.abs(d.estPct - 1) < 0.0005;
+    h += '<tr class="lc-total"><td class="lc-label">Total</td><td class="lc-num lc-pct' + (ok ? "" : " warn") + '">' +
+      pctLabel(d.estPct) + "</td>" + money(d.estTotal) + "</tr>";
+    if (!ok) h += '<tr class="lc-hint warn"><td colspan="3">Total persentase belum 100%.</td></tr>';
+    if (d.gaji !== null) {
+      h += gap;
+      h += '<tr class="lc-person"><td class="lc-label">Esti gaji perorang' +
+        '<span class="lc-sub">Gaji ÷ ' + d.persons + " orang</span></td><td></td>" + money(d.gaji / d.persons) + "</tr>";
+    }
+    h += "</tbody></table>";
+    el.lcSheet.innerHTML = '<div class="lc-scroll">' + h + "</div>";
+  }
+
+  function exportSheetCSV() {
+    var year = el.summaryYear.value || String(new Date().getFullYear());
+    var d = computeSheet(year);
+    var q = function (x) { return '"' + String(x).replace(/"/g, '""') + '"'; };
+    var lines = [q("Hitungan LC - " + d.periodLabel), "", q("Laba Rugi") + ",Nominal,Total"];
+    d.income.forEach(function (r) { lines.push(q(r.label + " (" + r.code + ")") + "," + Math.round(r.v) + ","); });
+    lines.push(q("Total Laba kotor") + ",," + Math.round(d.kotor));
+    lines.push("");
+    d.beban.forEach(function (r) { lines.push(q(r.label + " (" + r.code + ")") + "," + Math.round(r.v) + ","); });
+    d.notes.forEach(function (r) { lines.push(q(r.label + " (" + r.code + ", tidak dihitung)") + "," + Math.round(r.v) + ","); });
+    lines.push(q("Total Rugi") + ",," + Math.round(d.rugi));
+    lines.push("");
+    lines.push(q("Total Laba bersih") + ",," + Math.round(d.bersih));
+    lines.push("", "");
+    lines.push(q("Est hitungan") + ",%,Nominal");
+    d.est.forEach(function (e) { lines.push(q(e.name) + "," + q(pctLabel(e.pct)) + "," + Math.round(e.v)); });
+    lines.push(q("Total") + "," + q(pctLabel(d.estPct)) + "," + Math.round(d.estTotal));
+    if (d.gaji !== null) { lines.push(""); lines.push(q("Esti gaji perorang (Gaji / " + d.persons + ")") + ",," + Math.round(d.gaji / d.persons)); }
+
+    var blob = new Blob(["\ufeff" + lines.join("\r\n")], { type: "text/csv;charset=utf-8;" });
+    var url = URL.createObjectURL(blob);
+    var link = document.createElement("a");
+    link.href = url;
+    link.download = "hitungan-lc-" + d.periodLabel.toLowerCase().replace(/\s+/g, "-") + ".csv";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   }
 
   // Editor alokasi
@@ -1836,82 +1750,7 @@
     allocation = { persons: Math.max(1, parseInt(el.allocPersons.value, 10) || 1), items: items };
     saveAlloc();
     closeAllocEditor();
-    renderPL(el.summaryYear.value || String(new Date().getFullYear()));
-  }
-
-  // ---- Editor pembagian laba ----
-  function shareRow(name, pctNum) {
-    var row = document.createElement("div");
-    row.className = "shares-row";
-
-    var ni = document.createElement("input");
-    ni.type = "text"; ni.className = "share-name"; ni.value = name || ""; ni.placeholder = "Nama";
-
-    var wrap = document.createElement("div");
-    wrap.className = "share-pct-wrap";
-    var pi = document.createElement("input");
-    pi.type = "number"; pi.className = "share-pct"; pi.min = "0"; pi.max = "100"; pi.step = "0.1";
-    pi.value = (pctNum != null ? pctNum : "");
-    pi.addEventListener("input", updateSharesTotal);
-    var sign = document.createElement("span");
-    sign.className = "share-pct-sign"; sign.textContent = "%";
-    wrap.appendChild(pi); wrap.appendChild(sign);
-
-    var rm = document.createElement("button");
-    rm.type = "button"; rm.className = "icon-btn del"; rm.title = "Hapus";
-    rm.setAttribute("aria-label", "Hapus baris");
-    rm.innerHTML = window.Icons ? Icons.svg("trash") : "Hapus";
-    rm.addEventListener("click", function () { row.remove(); updateSharesTotal(); });
-
-    row.appendChild(ni); row.appendChild(wrap); row.appendChild(rm);
-    return row;
-  }
-
-  function renderSharesRows(list) {
-    el.sharesRows.innerHTML = "";
-    list.forEach(function (s) {
-      el.sharesRows.appendChild(shareRow(s.name, Math.round(s.pct * 1000) / 10));
-    });
-    updateSharesTotal();
-  }
-
-  function updateSharesTotal() {
-    var total = 0;
-    el.sharesRows.querySelectorAll(".share-pct").forEach(function (i) {
-      total += parseFloat(i.value) || 0;
-    });
-    var rounded = Math.round(total * 10) / 10;
-    var ok = Math.abs(rounded - 100) < 0.05;
-    el.sharesTotal.textContent = "Total: " + rounded + "%" + (ok ? "" : " (harus 100%)");
-    el.sharesTotal.classList.toggle("shares-ok", ok);
-    el.sharesTotal.classList.toggle("shares-bad", !ok);
-  }
-
-  function openSharesEditor() {
-    renderSharesRows(PROFIT_SHARES);
-    el.sharesEditor.hidden = false;
-    el.profitSharesBtn.classList.add("is-active-toggle");
-  }
-  function closeSharesEditor() {
-    el.sharesEditor.hidden = true;
-    el.profitSharesBtn.classList.remove("is-active-toggle");
-  }
-  function commitShares() {
-    var list = [];
-    el.sharesRows.querySelectorAll(".shares-row").forEach(function (r) {
-      var name = r.querySelector(".share-name").value.trim();
-      var pct = parseFloat(r.querySelector(".share-pct").value) || 0;
-      if (name) list.push({ name: name, pct: pct / 100 });
-    });
-    if (!list.length) { alert("Tambahkan minimal satu orang."); return; }
-    var total = list.reduce(function (a, b) { return a + b.pct; }, 0);
-    if (Math.abs(total - 1) > 0.0005) {
-      if (!confirm("Total persentase " + (Math.round(total * 1000) / 10) + "%, bukan 100%. Tetap simpan?")) return;
-    }
-    PROFIT_SHARES = list;
-    persistShares();
-    closeSharesEditor();
-    renderSummary();
+    renderSheet(el.summaryYear.value || String(new Date().getFullYear()));
   }
 
   // ================= CHARTS =================
@@ -2179,39 +2018,6 @@
       ariaLabel: "Pendapatan per kategori " + year, empty: "Belum ada pendapatan." });
   }
 
-  // ---- Summary charts ----
-  function renderSummaryCharts(s, grandProfit) {
-    var year = el.summaryYear.value || String(new Date().getFullYear());
-    var totalSales = sumArr(s.sales);
-    var margin = totalSales ? grandProfit / totalSales * 100 : 0;
-    setStats("chartSummaryCombo", totalSales || sumArr(s.expense) ? [
-      { l: "Margin Laba", v: margin.toFixed(1).replace(".", ",") + "%", tone: margin >= 0 ? "good" : "bad" },
-      { l: "Laba Tertinggi", v: peakText(peakOf(s.profit)) },
-      { l: "Bulan Rugi", v: s.profit.filter(function (v) { return v < 0; }).length + " bulan",
-        tone: s.profit.some(function (v) { return v < 0; }) ? "bad" : "good" }
-    ] : []);
-    Charts.bars($("chartSummaryCombo"), {
-      labels: MONTHS_SHORT, fullLabels: fullMonths(year),
-      series: [
-        { name: "Pendapatan", colorVar: "--ser-1", values: s.sales },
-        { name: "Beban", colorVar: "--ser-2", values: s.expense },
-        { name: "Laba Bersih", colorVar: "--ser-3", values: s.profit }
-      ],
-      ariaLabel: "Pendapatan, beban, dan laba bersih per bulan " + year,
-      empty: "Belum ada data.",
-      height: 260
-    });
-    var splitItems = PROFIT_SHARES.map(function (p, i) {
-      return { label: p.name + " (" + Math.round(p.pct * 100) + "%)", value: Math.max(0, grandProfit) * p.pct, colorVar: PALETTE[i % PALETTE.length] };
-    });
-    setStats("chartProfitSplit", grandProfit > 0 ? [
-      { l: "Laba Dibagi", v: formatRupiah(grandProfit), tone: "good" },
-      { l: "Penerima", v: PROFIT_SHARES.length + " pihak" }
-    ] : []);
-    Charts.donut($("chartProfitSplit"), { items: splitItems, centerLabel: "Laba Bersih",
-      ariaLabel: "Pembagian laba bersih", empty: "Belum ada laba." });
-  }
-
   function renderChartsFor(view) {
     if (!window.Charts) return;
     if (view === "cashflow") renderCashflowCharts();
@@ -2379,18 +2185,11 @@
 
   // Summary events
   el.summaryYear.addEventListener("change", renderSummary);
-  el.exportSummaryBtn.addEventListener("click", exportSummaryCSV);
-  el.profitSharesBtn.addEventListener("click", function () {
-    if (el.sharesEditor.hidden) openSharesEditor(); else closeSharesEditor();
-  });
-  el.sharesAdd.addEventListener("click", function () {
-    el.sharesRows.appendChild(shareRow("", ""));
-    updateSharesTotal();
-  });
-  el.sharesSave.addEventListener("click", commitShares);
   el.summaryPeriod.addEventListener("change", function () {
-    renderPL(el.summaryYear.value || String(new Date().getFullYear()));
+    renderSheet(el.summaryYear.value || String(new Date().getFullYear()));
   });
+  el.exportSheetBtn.addEventListener("click", exportSheetCSV);
+
   el.allocEditBtn.addEventListener("click", function () {
     if (el.allocEditor.hidden) openAllocEditor(); else closeAllocEditor();
   });
@@ -2398,10 +2197,6 @@
   el.allocSave.addEventListener("click", commitAlloc);
   el.allocCancel.addEventListener("click", closeAllocEditor);
   el.allocReset.addEventListener("click", function () { renderAllocRows(normalizeAlloc(null)); });
-  el.sharesCancel.addEventListener("click", closeSharesEditor);
-  el.sharesResetDefault.addEventListener("click", function () {
-    renderSharesRows(DEFAULT_SHARES);
-  });
 
   // Re-render the active view's charts on resize (debounced) so SVG widths
   // track the container.
@@ -2445,7 +2240,6 @@
     if (key === "transactions") { transactions = Array.isArray(data) ? data : []; migrateCodes(transactions); }
     else if (key === "assets") assets = Array.isArray(data) ? data : [];
     else if (key === "emergency") emergency = data || null;
-    else if (key === "profitshares") PROFIT_SHARES = (Array.isArray(data) && data.length) ? data : PROFIT_SHARES;
     else if (key === "opening") openingBalance = normalizeOpening(data);
     else if (key === "allocation") allocation = normalizeAlloc(data);
   }
@@ -2460,7 +2254,6 @@
       applyCloudDoc("transactions", d.transactions); // migrates in memory
       applyCloudDoc("assets", d.assets);
       applyCloudDoc("emergency", d.emergency);
-      applyCloudDoc("profitshares", d.profitshares);
       applyCloudDoc("opening", d.opening);
       applyCloudDoc("allocation", d.allocation);
       if (needsMigration) save(); // persist the renamed codes to the cloud once

@@ -558,78 +558,42 @@
       <section class="panel expense-head">
         <div class="expense-head-text">
           <h2 class="panel-title">Summary</h2>
-          <p class="expense-note">Otomatis dihitung dari menu <strong>Sales</strong> &amp; <strong>Expense</strong>. Laba bersih = Pendapatan − Beban, lalu dibagi sesuai porsi (Wiliam/Reyga/Kevin 20%, Investment 30%, Ads 10%).</p>
+          <p class="expense-note">Format <strong>Hitungan LC</strong>, dihitung otomatis dari <strong>Cash Flow</strong>. Laba bersih = Total Laba kotor − Total Rugi. Estimasi dihitung dari Total Laba kotor.</p>
         </div>
         <div class="expense-controls">
           <label class="inline-label" for="summaryYear">Tahun</label>
           <select id="summaryYear" class="select-plain" aria-label="Pilih tahun"></select>
-          <button id="profitSharesBtn" class="btn btn-outline" type="button">Atur Pembagian</button>
-          <button id="exportSummaryBtn" class="btn btn-primary" type="button">Export CSV</button>
+          <label class="inline-label" for="summaryPeriod">Periode</label>
+          <select id="summaryPeriod" class="select-plain" aria-label="Periode"></select>
+          <button id="allocEditBtn" class="btn btn-outline" type="button">Atur Est. Hitungan</button>
+          <button id="exportSheetBtn" class="btn btn-primary" type="button">Export CSV</button>
         </div>
       </section>
 
-      <!-- Editor pembagian laba -->
-      <section class="panel shares-editor" id="sharesEditor" hidden>
+      <!-- Editor persentase Est hitungan -->
+      <section class="panel alloc-editor" id="allocEditor" hidden>
         <div class="shares-head">
-          <h3 class="chart-title">Atur Pembagian Laba Bersih</h3>
-          <span class="shares-total" id="sharesTotal">Total: 100%</span>
+          <h3 class="chart-title">Atur Est Hitungan (% dari Total Laba kotor)</h3>
+          <span class="shares-total" id="allocTotal">Total: 100%</span>
         </div>
-        <div id="sharesRows" class="shares-rows"></div>
-        <button type="button" class="btn btn-outline btn-sm" id="sharesAdd">+ Tambah Orang</button>
+        <div id="allocRows" class="shares-rows"></div>
+        <div class="alloc-editor-foot">
+          <button type="button" class="btn btn-outline btn-sm" id="allocAdd">+ Tambah Pos</button>
+          <label class="inline-label alloc-persons-label">Gaji dibagi
+            <input type="number" id="allocPersons" class="alloc-persons" min="1" step="1" /> orang</label>
+        </div>
         <div class="shares-actions">
-          <button type="button" class="btn btn-primary" id="sharesSave">Simpan</button>
-          <button type="button" class="btn btn-outline" id="sharesCancel">Batal</button>
-          <button type="button" class="btn btn-outline" id="sharesResetDefault">Reset Default</button>
+          <button type="button" class="btn btn-primary" id="allocSave">Simpan</button>
+          <button type="button" class="btn btn-outline" id="allocCancel">Batal</button>
+          <button type="button" class="btn btn-outline" id="allocReset">Reset Default</button>
         </div>
       </section>
 
-      <section class="expense-summary" id="summaryCards"></section>
-
-      <!-- Laba Rugi + Estimasi Alokasi (dari Hitungan LC) -->
-      <section class="dashboard dashboard-2 pl-grid">
-        <div class="panel pl-panel">
-          <div class="pl-head">
-            <h3 class="chart-title">Laba Rugi</h3>
-            <select id="summaryPeriod" class="select-plain" aria-label="Periode laba rugi"></select>
-          </div>
-          <div id="plBody"></div>
-        </div>
-        <div class="panel alloc-panel">
-          <div class="pl-head">
-            <h3 class="chart-title">Estimasi Alokasi Laba Kotor</h3>
-            <button id="allocEditBtn" class="btn btn-outline btn-sm" type="button">Atur Alokasi</button>
-          </div>
-          <div id="allocEditor" class="alloc-editor" hidden>
-            <div id="allocRows" class="shares-rows"></div>
-            <div class="alloc-editor-foot">
-              <button type="button" class="btn btn-outline btn-sm" id="allocAdd">+ Tambah Pos</button>
-              <label class="inline-label alloc-persons-label">Gaji dibagi
-                <input type="number" id="allocPersons" class="alloc-persons" min="1" step="1" /> orang</label>
-              <span class="shares-total" id="allocTotal">Total: 100%</span>
-            </div>
-            <div class="shares-actions">
-              <button type="button" class="btn btn-primary" id="allocSave">Simpan</button>
-              <button type="button" class="btn btn-outline" id="allocCancel">Batal</button>
-              <button type="button" class="btn btn-outline" id="allocReset">Reset Default</button>
-            </div>
-          </div>
-          <div id="allocBody"></div>
-        </div>
+      <!-- Lembar Hitungan LC -->
+      <section class="panel lc-panel">
+        <div id="lcSheet"></div>
       </section>
 
-      <section class="dashboard dashboard-2">
-        <div class="panel chart-card">
-          <h3 class="chart-title">Pendapatan · Beban · Laba Bersih per Bulan</h3>
-          <div class="chart-body" id="chartSummaryCombo"></div>
-        </div>
-        <div class="panel chart-card">
-          <h3 class="chart-title">Pembagian Laba Bersih (Tahun)</h3>
-          <div class="chart-body" id="chartProfitSplit"></div>
-        </div>
-      </section>
-
-      <div id="summaryWrap"></div>
-      <p class="empty-state panel" id="summaryEmpty" hidden>Belum ada data. Tambahkan transaksi penjualan &amp; pengeluaran di menu Cash Flow.</p>
     </div>
   </main>
 

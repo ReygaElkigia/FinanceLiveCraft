@@ -1,7 +1,7 @@
 /* FinanceLiveCraft — lapisan penyimpanan cloud (Supabase).
  *
  * Menyimpan tiap dataset sebagai satu baris JSON di tabel `app_data`
- * (key = "transactions" | "assets" | "emergency" | "profitshares").
+ * (key = "transactions" | "assets" | "emergency" | "opening" | "allocation").
  * Data dibagikan ke semua pengguna yang login (satu workspace bersama).
  *
  * Bila Supabase belum dikonfigurasi atau SDK gagal dimuat, isConfigured()
