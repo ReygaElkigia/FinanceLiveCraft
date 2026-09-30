@@ -51,7 +51,6 @@
         { code: "GA",  label: "Gaji Admin & Co Host" },
         { code: "GCC", label: "Gaji Content Creator" },
         { code: "GH",  label: "Gaji / Honor Live Streamer" },
-        { code: "GO",  label: "Gaji Owner" },
         { code: "SHM", label: "Investasi" }
       ]
     },
