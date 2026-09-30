@@ -585,6 +585,38 @@
 
       <section class="expense-summary" id="summaryCards"></section>
 
+      <!-- Laba Rugi + Estimasi Alokasi (dari Hitungan LC) -->
+      <section class="dashboard dashboard-2 pl-grid">
+        <div class="panel pl-panel">
+          <div class="pl-head">
+            <h3 class="chart-title">Laba Rugi</h3>
+            <select id="summaryPeriod" class="select-plain" aria-label="Periode laba rugi"></select>
+          </div>
+          <div id="plBody"></div>
+        </div>
+        <div class="panel alloc-panel">
+          <div class="pl-head">
+            <h3 class="chart-title">Estimasi Alokasi Laba Kotor</h3>
+            <button id="allocEditBtn" class="btn btn-outline btn-sm" type="button">Atur Alokasi</button>
+          </div>
+          <div id="allocEditor" class="alloc-editor" hidden>
+            <div id="allocRows" class="shares-rows"></div>
+            <div class="alloc-editor-foot">
+              <button type="button" class="btn btn-outline btn-sm" id="allocAdd">+ Tambah Pos</button>
+              <label class="inline-label alloc-persons-label">Gaji dibagi
+                <input type="number" id="allocPersons" class="alloc-persons" min="1" step="1" /> orang</label>
+              <span class="shares-total" id="allocTotal">Total: 100%</span>
+            </div>
+            <div class="shares-actions">
+              <button type="button" class="btn btn-primary" id="allocSave">Simpan</button>
+              <button type="button" class="btn btn-outline" id="allocCancel">Batal</button>
+              <button type="button" class="btn btn-outline" id="allocReset">Reset Default</button>
+            </div>
+          </div>
+          <div id="allocBody"></div>
+        </div>
+      </section>
+
       <section class="dashboard dashboard-2">
         <div class="panel chart-card">
           <h3 class="chart-title">Pendapatan · Beban · Laba Bersih per Bulan</h3>

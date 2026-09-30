@@ -15,8 +15,10 @@ Aplikasi punya enam menu: **Cash Flow**, **Expense Log**, **Aset**,
   plus **Total Cash In, Total Cash Out, dan Total Saldo** keseluruhan.
   Bisa difilter per akun.
 - **Input transaksi** dengan pilihan **Kode** lewat dropdown:
-  `ADM, ADS, AST, CMS, DP, EAT, GA, GCC, GH, GO, HTB, INC, INT, NC, NM, OEX,
-  PLN, RMH, SHM, SOA, TRAN`
+  `ADM, ADS, AST, CMS, DP, EAT, GA, GCC, GH, GO, HMS, HTB, INC, INT, KMS, KRS,
+  NC, NM, OEX, PLC, PLN, RMH, SHL, SHM, SOA, TRAN`
+  (pendapatan `PLC` Paket LC, `KRS` Komisi RB & SK, `KMS` Komisi Mamah Salma;
+  beban `HMS` Host Mamah Salma, `SHL` Beban Sheila)
   (kode penjualan `DP/NM/NC/SOA/HTB` dipakai untuk menu Sales;
   `GO` Gaji Owner tampil berwarna ungu di Cash Flow & Expense Log dengan label
   *tidak dihitung*, tapi **tidak** masuk Total Beban maupun Laba Bersih)
@@ -64,6 +66,13 @@ Aplikasi punya enam menu: **Cash Flow**, **Expense Log**, **Aset**,
   (Total Pendapatan, rata-rata, bulan tertinggi), dan Export CSV.
 
 ### 6. Summary
+- **Laba Rugi** (format *Hitungan LC*): rincian pendapatan per sumber, beban per
+  pos, Total Laba Kotor, Total Beban, Laba Bersih + margin, dan % tiap baris
+  terhadap laba kotor. Bisa per bulan atau setahun. Gaji Owner tampil sebagai
+  catatan (tidak dihitung).
+- **Estimasi Alokasi Laba Kotor**: Beban operasional 40%, Cash pegangan 5%,
+  SHU 5%, Ads 35%, Gaji 15% + estimasi gaji per orang (Gaji ÷ 3). Pos, persen,
+  dan jumlah orang bisa diubah lewat **Atur Alokasi**.
 - **Otomatis** dihitung dari menu **Sales** & **Expense** (per bulan, per tahun):
   - **Sales Log (Laba kotor)** — pendapatan
   - **Expense Log (Beban)** — pengeluaran

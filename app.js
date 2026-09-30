@@ -22,17 +22,22 @@
     { code: "DP",   label: "INTHEBOX DP (Penjualan)" },
     { code: "EAT",  label: "Makan / Konsumsi" },
     { code: "GA",   label: "Gaji Admin & Co Host" },
-    { code: "GCC",  label: "Gaji Content Creator" },
-    { code: "GH",   label: "Gaji / Honor" },
+    { code: "GCC",  label: "Gaji Editor / Content Creator" },
+    { code: "GH",   label: "Gaji Host Livecraft" },
+    { code: "HMS",  label: "Gaji Host Mamah Salma" },
     { code: "GO",   label: "Gaji Owner" },
     { code: "HTB",  label: "Hutang Bank / Pinjaman" },
     { code: "INC",  label: "Income / Pemasukan" },
     { code: "INT",  label: "Internet" },
+    { code: "KMS",  label: "Komisi Mamah Salma (Pendapatan)" },
+    { code: "KRS",  label: "Komisi RB & SK (Pendapatan)" },
     { code: "NC",   label: "INTHEBOX Komisi (Penjualan)" },
     { code: "NM",   label: "INTHEBOX Bulanan (Penjualan)" },
     { code: "OEX",  label: "Operasional Lain" },
+    { code: "PLC",  label: "Income Paket LC (Pendapatan)" },
     { code: "PLN",  label: "Listrik / PLN" },
     { code: "RMH",  label: "Rumah / Sewa" },
+    { code: "SHL",  label: "Beban Sheila" },
     { code: "SHM",  label: "Saham / Investasi" },
     { code: "SOA",  label: "Sale of Asset (Penjualan Aset)" },
     { code: "TRAN", label: "Transportasi" }
@@ -48,9 +53,11 @@
     {
       title: "Salary & Wages Expense",
       rows: [
+        { code: "GH",  label: "Host Livecraft (Live Streamer)" },
+        { code: "HMS", label: "Host Mamah Salma" },
+        { code: "SHL", label: "Beban Sheila" },
         { code: "GA",  label: "Gaji Admin & Co Host" },
-        { code: "GCC", label: "Gaji Content Creator" },
-        { code: "GH",  label: "Gaji / Honor Live Streamer" },
+        { code: "GCC", label: "Editor / Content Creator" },
         { code: "GO",  label: "Gaji Owner", excluded: true },
         { code: "SHM", label: "Investasi" }
       ]
@@ -88,6 +95,9 @@
     {
       title: "Cash Sales",
       rows: [
+        { code: "PLC", label: "Income Paket LC" },
+        { code: "KRS", label: "Komisi RB & SK" },
+        { code: "KMS", label: "Komisi Mamah Salma" },
         { code: "DP",  label: "INTHEBOX DP" },
         { code: "NM",  label: "INTHEBOX (Monthly)" },
         { code: "NC",  label: "INTHEBOX (Commission)" },
@@ -159,6 +169,39 @@
     catch (e) { alert("Gagal menyimpan saldo awal."); }
   }
   var openingBalance = loadOpening();
+
+  // Estimasi alokasi Laba Kotor (dari "Hitungan LC"): pos + persen, dan
+  // jumlah orang untuk membagi pos "Gaji".
+  var ALLOC_KEY = "financelivecraft.allocation.v1";
+  var DEFAULT_ALLOC = {
+    persons: 3,
+    items: [
+      { name: "Beban operasional", pct: 0.40 },
+      { name: "Cash pegangan",     pct: 0.05 },
+      { name: "SHU",               pct: 0.05 },
+      { name: "Ads",               pct: 0.35 },
+      { name: "Gaji",              pct: 0.15 }
+    ]
+  };
+  function normalizeAlloc(d) {
+    if (!d || !Array.isArray(d.items) || !d.items.length) return JSON.parse(JSON.stringify(DEFAULT_ALLOC));
+    return {
+      persons: Math.max(1, parseInt(d.persons, 10) || DEFAULT_ALLOC.persons),
+      items: d.items.map(function (i) { return { name: String(i.name || ""), pct: Number(i.pct) || 0 }; })
+    };
+  }
+  function loadAlloc() {
+    try {
+      var raw = localStorage.getItem(ALLOC_KEY);
+      return normalizeAlloc(raw ? JSON.parse(raw) : null);
+    } catch (e) { return normalizeAlloc(null); }
+  }
+  function saveAlloc() {
+    if (useCloud) { window.Cloud.saveDoc("allocation", allocation).catch(cloudError); return; }
+    try { localStorage.setItem(ALLOC_KEY, JSON.stringify(allocation)); }
+    catch (e) { alert("Gagal menyimpan alokasi."); }
+  }
+  var allocation = loadAlloc();
 
   var MONTHS_SHORT = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Ags","Sep","Okt","Nov","Des"];
 
@@ -291,6 +334,19 @@
     sharesSave: document.getElementById("sharesSave"),
     sharesCancel: document.getElementById("sharesCancel"),
     sharesResetDefault: document.getElementById("sharesResetDefault"),
+    // Laba Rugi + Alokasi
+    summaryPeriod: document.getElementById("summaryPeriod"),
+    plBody: document.getElementById("plBody"),
+    allocBody: document.getElementById("allocBody"),
+    allocEditBtn: document.getElementById("allocEditBtn"),
+    allocEditor: document.getElementById("allocEditor"),
+    allocRows: document.getElementById("allocRows"),
+    allocAdd: document.getElementById("allocAdd"),
+    allocPersons: document.getElementById("allocPersons"),
+    allocTotal: document.getElementById("allocTotal"),
+    allocSave: document.getElementById("allocSave"),
+    allocCancel: document.getElementById("allocCancel"),
+    allocReset: document.getElementById("allocReset"),
     // Auth / cloud
     userBox: document.getElementById("userBox"),
     userEmail: document.getElementById("userEmail"),
@@ -1539,6 +1595,7 @@
       el.summaryEmpty.hidden = false;
       el.summaryCards.innerHTML = "";
       if (window.Charts) renderSummaryCharts(s, grandProfit);
+      renderPL(year);
       return;
     }
     el.summaryEmpty.hidden = true;
@@ -1568,6 +1625,7 @@
     }).join("");
 
     if (window.Charts) renderSummaryCharts(s, grandProfit);
+    renderPL(year);
   }
 
   function exportSummaryCSV() {
@@ -1599,6 +1657,181 @@
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+  }
+
+  // ---- Laba Rugi + Estimasi Alokasi (format "Hitungan LC") ----
+  function populatePeriods() {
+    if (el.summaryPeriod.options.length) return;
+    var o = document.createElement("option");
+    o.value = ""; o.textContent = "Setahun";
+    el.summaryPeriod.appendChild(o);
+    MONTHS_FULL.forEach(function (m, i) {
+      var opt = document.createElement("option");
+      opt.value = String(i); opt.textContent = m;
+      el.summaryPeriod.appendChild(opt);
+    });
+  }
+  function periodSums(year, month) {
+    var inc = {}, out = {};
+    transactions.forEach(function (t) {
+      if (!t.tanggal || t.tanggal.slice(0, 4) !== year) return;
+      if (month >= 0 && parseInt(t.tanggal.slice(5, 7), 10) - 1 !== month) return;
+      if (t.cashIn) inc[t.kode] = (inc[t.kode] || 0) + t.cashIn;
+      if (t.cashOut) out[t.kode] = (out[t.kode] || 0) + t.cashOut;
+    });
+    return { inc: inc, out: out };
+  }
+  function pctText(part, whole) {
+    return whole ? (part / whole * 100).toFixed(1).replace(".", ",") + "%" : "";
+  }
+  function plRow(code, label, amount, base, cls, tag) {
+    return '<div class="pl-row' + (cls ? " " + cls : "") + '">' +
+      '<span class="pl-name">' + (code ? '<span class="badge' + (cls === "pl-note" ? " badge-excluded" : "") + '">' + code + "</span>" : "") +
+      escapeHtml(label) + (tag ? ' <span class="exp-tag">' + tag + "</span>" : "") + "</span>" +
+      '<span class="pl-pct">' + pctText(amount, base) + "</span>" +
+      '<span class="pl-amt">' + formatRupiah(amount) + "</span></div>";
+  }
+
+  function renderPL(year) {
+    populatePeriods();
+    var month = el.summaryPeriod.value === "" ? -1 : parseInt(el.summaryPeriod.value, 10);
+    var periodLabel = (month >= 0 ? MONTHS_FULL[month] + " " : "Tahun ") + year;
+    var ps = periodSums(year, month);
+
+    var incRows = [], expRows = [], noteRows = [];
+    SALES_GROUPS.forEach(function (g) {
+      var nonOp = g.title.indexOf("Non-Sales") !== -1;
+      g.rows.forEach(function (r) {
+        var v = ps.inc[r.code] || 0;
+        if (v) incRows.push({ code: r.code, label: r.label, v: v, tag: nonOp ? "non-usaha" : "" });
+      });
+    });
+    EXPENSE_GROUPS.forEach(function (g) {
+      g.rows.forEach(function (r) {
+        var v = ps.out[r.code] || 0;
+        if (!v) return;
+        (r.excluded ? noteRows : expRows).push({ code: r.code, label: r.label, v: v });
+      });
+    });
+    var kotor = incRows.reduce(function (a, r) { return a + r.v; }, 0);
+    var beban = expRows.reduce(function (a, r) { return a + r.v; }, 0);
+    var bersih = kotor - beban;
+
+    if (!incRows.length && !expRows.length && !noteRows.length) {
+      el.plBody.innerHTML = '<p class="chart-empty">Belum ada transaksi pada ' + escapeHtml(periodLabel) + ".</p>";
+    } else {
+      var h = '<p class="pl-period">Periode: <b>' + escapeHtml(periodLabel) + "</b> · % terhadap Laba Kotor</p>";
+      h += '<div class="pl-sec">Pendapatan</div>';
+      h += incRows.length ? incRows.map(function (r) { return plRow(r.code, r.label, r.v, kotor, "", r.tag); }).join("")
+        : '<div class="pl-row pl-empty"><span class="pl-name">Tidak ada pendapatan</span><span></span><span></span></div>';
+      h += plRow("", "Total Laba Kotor", kotor, 0, "pl-subtotal pos-total");
+      h += '<div class="pl-sec">Beban</div>';
+      h += expRows.length ? expRows.map(function (r) { return plRow(r.code, r.label, r.v, kotor); }).join("")
+        : '<div class="pl-row pl-empty"><span class="pl-name">Tidak ada beban</span><span></span><span></span></div>';
+      h += plRow("", "Total Beban (Rugi)", beban, kotor, "pl-subtotal neg-total");
+      h += '<div class="pl-net ' + (bersih >= 0 ? "good" : "bad") + '"><span>Laba Bersih</span>' +
+        '<span class="pl-margin">Margin ' + (pctText(bersih, kotor) || "–") + "</span>" +
+        "<b>" + formatRupiah(bersih) + "</b></div>";
+      if (noteRows.length) {
+        h += '<div class="pl-sec pl-sec-note">Catatan (tidak dihitung)</div>';
+        h += noteRows.map(function (r) { return plRow(r.code, r.label, r.v, 0, "pl-note"); }).join("");
+      }
+      el.plBody.innerHTML = h;
+    }
+    renderAllocation(kotor, periodLabel);
+  }
+
+  function renderAllocation(kotor, periodLabel) {
+    var totalPct = allocation.items.reduce(function (a, i) { return a + i.pct; }, 0);
+    var h = '<p class="pl-period">Dasar: <b>Laba Kotor ' + formatRupiah(kotor) + "</b> · " + escapeHtml(periodLabel) + "</p>";
+    var gaji = null;
+    allocation.items.forEach(function (it, i) {
+      var amt = kotor * it.pct;
+      if (/gaji/i.test(it.name) && gaji === null) gaji = amt;
+      h += '<div class="alloc-row">' +
+        '<div class="alloc-top"><span class="alloc-name"><span class="chart-swatch" style="background:var(' +
+        PALETTE[i % PALETTE.length] + ')"></span>' + escapeHtml(it.name) + "</span>" +
+        '<span class="pl-pct">' + (Math.round(it.pct * 1000) / 10).toString().replace(".", ",") + "%</span>" +
+        '<span class="pl-amt">' + formatRupiah(amt) + "</span></div>" +
+        '<div class="alloc-bar"><span style="width:' + Math.min(100, it.pct * 100) + "%;background:var(" +
+        PALETTE[i % PALETTE.length] + ')"></span></div></div>';
+    });
+    var ok = Math.abs(totalPct - 1) < 0.0005;
+    h += '<div class="pl-row pl-subtotal"><span class="pl-name">Total</span><span class="pl-pct' + (ok ? "" : " warn") + '">' +
+      (Math.round(totalPct * 1000) / 10).toString().replace(".", ",") + "%</span><span class=\"pl-amt\">" +
+      formatRupiah(kotor * totalPct) + "</span></div>";
+    if (!ok) h += '<p class="alloc-warn">Total persentase belum 100%.</p>';
+    if (gaji !== null) {
+      h += '<div class="pl-net good alloc-person"><span>Estimasi gaji per orang</span>' +
+        '<span class="pl-margin">Gaji ÷ ' + allocation.persons + " orang</span><b>" +
+        formatRupiah(gaji / allocation.persons) + "</b></div>";
+    }
+    el.allocBody.innerHTML = h;
+  }
+
+  // Editor alokasi
+  function allocRow(name, pctNum) {
+    var row = document.createElement("div");
+    row.className = "shares-row";
+    var ni = document.createElement("input");
+    ni.type = "text"; ni.className = "share-name alloc-name"; ni.value = name || ""; ni.placeholder = "Nama pos";
+    ni.setAttribute("aria-label", "Nama pos alokasi");
+    var wrap = document.createElement("div");
+    wrap.className = "share-pct-wrap";
+    var pi = document.createElement("input");
+    pi.type = "number"; pi.className = "share-pct alloc-pct"; pi.min = "0"; pi.max = "100"; pi.step = "0.1";
+    pi.value = (pctNum != null ? pctNum : "");
+    pi.setAttribute("aria-label", "Persen alokasi");
+    pi.addEventListener("input", updateAllocTotal);
+    var sign = document.createElement("span");
+    sign.className = "share-pct-sign"; sign.textContent = "%";
+    wrap.appendChild(pi); wrap.appendChild(sign);
+    var rm = document.createElement("button");
+    rm.type = "button"; rm.className = "icon-btn del"; rm.title = "Hapus";
+    rm.setAttribute("aria-label", "Hapus pos");
+    rm.innerHTML = window.Icons ? Icons.svg("trash") : "Hapus";
+    rm.addEventListener("click", function () { row.remove(); updateAllocTotal(); });
+    row.appendChild(ni); row.appendChild(wrap); row.appendChild(rm);
+    return row;
+  }
+  function renderAllocRows(a) {
+    el.allocRows.innerHTML = "";
+    a.items.forEach(function (it) { el.allocRows.appendChild(allocRow(it.name, Math.round(it.pct * 1000) / 10)); });
+    el.allocPersons.value = a.persons;
+    updateAllocTotal();
+  }
+  function updateAllocTotal() {
+    var total = 0;
+    el.allocRows.querySelectorAll(".alloc-pct").forEach(function (i) { total += parseFloat(i.value) || 0; });
+    var rounded = Math.round(total * 10) / 10, ok = Math.abs(rounded - 100) < 0.05;
+    el.allocTotal.textContent = "Total: " + String(rounded).replace(".", ",") + "%" + (ok ? "" : " (harus 100%)");
+    el.allocTotal.classList.toggle("shares-ok", ok);
+    el.allocTotal.classList.toggle("shares-bad", !ok);
+  }
+  function openAllocEditor() {
+    renderAllocRows(allocation);
+    el.allocEditor.hidden = false;
+    el.allocEditBtn.classList.add("is-active-toggle");
+  }
+  function closeAllocEditor() {
+    el.allocEditor.hidden = true;
+    el.allocEditBtn.classList.remove("is-active-toggle");
+  }
+  function commitAlloc() {
+    var items = [];
+    el.allocRows.querySelectorAll(".shares-row").forEach(function (r) {
+      var name = r.querySelector(".alloc-name").value.trim();
+      var pct = parseFloat(r.querySelector(".alloc-pct").value) || 0;
+      if (name) items.push({ name: name, pct: pct / 100 });
+    });
+    if (!items.length) { alert("Tambahkan minimal satu pos alokasi."); return; }
+    var total = items.reduce(function (a, b) { return a + b.pct; }, 0);
+    if (Math.abs(total - 1) > 0.0005 &&
+        !confirm("Total alokasi " + String(Math.round(total * 1000) / 10).replace(".", ",") + "%, bukan 100%. Tetap simpan?")) return;
+    allocation = { persons: Math.max(1, parseInt(el.allocPersons.value, 10) || 1), items: items };
+    saveAlloc();
+    closeAllocEditor();
+    renderPL(el.summaryYear.value || String(new Date().getFullYear()));
   }
 
   // ---- Editor pembagian laba ----
@@ -2150,6 +2383,16 @@
     updateSharesTotal();
   });
   el.sharesSave.addEventListener("click", commitShares);
+  el.summaryPeriod.addEventListener("change", function () {
+    renderPL(el.summaryYear.value || String(new Date().getFullYear()));
+  });
+  el.allocEditBtn.addEventListener("click", function () {
+    if (el.allocEditor.hidden) openAllocEditor(); else closeAllocEditor();
+  });
+  el.allocAdd.addEventListener("click", function () { el.allocRows.appendChild(allocRow("", "")); updateAllocTotal(); });
+  el.allocSave.addEventListener("click", commitAlloc);
+  el.allocCancel.addEventListener("click", closeAllocEditor);
+  el.allocReset.addEventListener("click", function () { renderAllocRows(normalizeAlloc(null)); });
   el.sharesCancel.addEventListener("click", closeSharesEditor);
   el.sharesResetDefault.addEventListener("click", function () {
     renderSharesRows(DEFAULT_SHARES);
@@ -2199,6 +2442,7 @@
     else if (key === "emergency") emergency = data || null;
     else if (key === "profitshares") PROFIT_SHARES = (Array.isArray(data) && data.length) ? data : PROFIT_SHARES;
     else if (key === "opening") openingBalance = normalizeOpening(data);
+    else if (key === "allocation") allocation = normalizeAlloc(data);
   }
 
   function enterApp(session) {
@@ -2211,6 +2455,7 @@
       applyCloudDoc("emergency", d.emergency);
       applyCloudDoc("profitshares", d.profitshares);
       applyCloudDoc("opening", d.opening);
+      applyCloudDoc("allocation", d.allocation);
       showGate("none");
       resetForm();
       resetAssetForm();
@@ -2252,6 +2497,7 @@
       window.Cloud.signOut().then(function () {
         transactions = []; assets = []; emergency = null;
         openingBalance = normalizeOpening(null);
+        allocation = normalizeAlloc(null);
         el.userBox.hidden = true;
         el.authEmail.value = ""; el.authPassword.value = "";
         setAuthMode(false);
