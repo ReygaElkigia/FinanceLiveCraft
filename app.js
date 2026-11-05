@@ -149,7 +149,7 @@
   }
   var openingBalance = loadOpening();
 
-  // Estimasi alokasi Laba Kotor (dari "Hitungan LC"): pos + persen, dan
+  // Estimasi alokasi Laba Bersih (dari "Hitungan LC"): pos + persen, dan
   // jumlah orang untuk membagi pos "Gaji".
   var ALLOC_KEY = "financelivecraft.allocation.v1";
   var DEFAULT_ALLOC = {
@@ -1548,7 +1548,7 @@
   ];
 
   // Kode yang tidak ditampilkan & tidak dihitung di Summary. Ads sudah
-  // dianggarkan lewat Est hitungan (Ads % dari Laba kotor).
+  // dianggarkan lewat Est hitungan (Ads % dari Laba bersih).
   var SHEET_HIDDEN = ["ADS"];
 
   function populatePeriods() {
@@ -1604,15 +1604,16 @@
 
     var kotor = income.reduce(function (a, r) { return a + r.v; }, 0);
     var rugi = beban.reduce(function (a, r) { return a + r.v; }, 0);
-    var est = allocation.items.map(function (it) { return { name: it.name, pct: it.pct, v: kotor * it.pct }; });
+    var bersih = kotor - rugi;
+    var est = allocation.items.map(function (it) { return { name: it.name, pct: it.pct, v: bersih * it.pct }; });
     var estPct = est.reduce(function (a, e) { return a + e.pct; }, 0);
     var gaji = null;
     est.forEach(function (e) { if (gaji === null && /gaji/i.test(e.name)) gaji = e.v; });
     return {
       periodLabel: (month >= 0 ? MONTHS_FULL[month] + " " : "Tahun ") + year,
       income: income, beban: beban, notes: notes,
-      kotor: kotor, rugi: rugi, bersih: kotor - rugi,
-      est: est, estPct: estPct, estTotal: kotor * estPct,
+      kotor: kotor, rugi: rugi, bersih: bersih,
+      est: est, estPct: estPct, estTotal: bersih * estPct,
       gaji: gaji, persons: allocation.persons,
       empty: !Object.keys(ps.inc).length && !Object.keys(ps.out).length
     };
@@ -1648,7 +1649,7 @@
 
     h += '<tr class="lc-gap lc-gap-lg"><td colspan="3"></td></tr>';
     h += '<tr class="lc-title"><th colspan="3" scope="colgroup">Est hitungan' +
-      '<span class="lc-period">dari Total Laba kotor</span></th></tr>';
+      '<span class="lc-period">dari Total Laba bersih</span></th></tr>';
     d.est.forEach(function (e) {
       h += '<tr><td class="lc-label">' + escapeHtml(e.name) + '</td><td class="lc-num lc-pct">' + pctLabel(e.pct) + "</td>" +
         money(e.v) + "</tr>";
